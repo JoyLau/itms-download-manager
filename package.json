@@ -1,0 +1,44 @@
+{
+  "name": "itms-download-manager",
+  "version": "1.0.0",
+  "private": true,
+  "main": "main.js",
+  "devDependencies": {
+    "@craco/craco": "^5.6.4",
+    "antd": "^4.3.3",
+    "axios": "^0.19.2",
+    "craco-less": "^1.17.0",
+    "electron": "^9.0.4",
+    "mobx-react": "^6.2.2",
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1",
+    "react-router": "^5.2.0",
+    "react-scripts": "3.4.1"
+  },
+  "scripts": {
+    "eletron-start": "electron .",
+    "start": "craco start",
+    "build": "craco build",
+    "test": "craco test",
+    "eject": "craco eject"
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "dependencies": {
+    "@ant-design/icons": "^4.2.1",
+    "event-emitter": "^0.3.5"
+  }
+}
