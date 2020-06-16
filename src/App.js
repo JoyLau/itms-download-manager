@@ -13,7 +13,7 @@ class App extends Component {
         menu: 'active',
     }
 
-    onMenuClick(item){
+    onMenuClick(item) {
         this.setState({
             menu: item
         })
@@ -26,8 +26,10 @@ class App extends Component {
                     <Layout className={'App '}>
                         <LeftSider onMenuClick={(item) => this.onMenuClick(item)}/>
                         {this.state.menu && this.state.menu !== 'setting' ?
-                            <DownloadView currentMenu={this.state.menu}/> :
-                            <SettingView />}
+                            <DownloadView currentMenu={this.state.menu}/>
+                            :
+                            <SettingView/>
+                        }
                     </Layout>
                 </ConfigProvider>
             </div>

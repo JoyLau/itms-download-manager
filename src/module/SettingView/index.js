@@ -1,7 +1,7 @@
 import React from 'react'
 import {Layout, Popconfirm, Form, Input, InputNumber, Switch, Button, message, List, Card, Modal, Col} from 'antd'
-import device from '../device'
-import {getStorage, setStorage, eventBus} from "../util/utils";
+import device from '../../device'
+import {getStorage, setStorage, eventBus} from "../../util/utils";
 import { FolderOutlined,PlusOutlined,LockOutlined,UnlockOutlined,EditOutlined,DeleteOutlined} from'@ant-design/icons';
 
 

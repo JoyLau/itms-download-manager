@@ -12,7 +12,7 @@ class LeftSider extends React.Component {
                 <div className="userInfo">
                     <Avatar size='large' style={{ backgroundColor: '#87d068' }} icon={<UserOutlined />} />
                     <div className="userName">
-                        <spa>JoyLau</spa>
+                        <span>JoyLau</span>
                     </div>
                 </div>
                 <Menu onClick={(item) => this.props.onMenuClick(item.key)}

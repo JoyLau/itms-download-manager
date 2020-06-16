@@ -1,6 +1,6 @@
 import React from 'react'
 import { Button} from 'antd'
-import device from '../device'
+import device from '../../device'
 import {MinusOutlined,ShrinkOutlined,ArrowsAltOutlined,CloseOutlined } from'@ant-design/icons';
 
 

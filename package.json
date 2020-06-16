@@ -1,24 +1,101 @@
 {
   "name": "itms-download-manager",
   "version": "1.0.0",
-  "private": true,
+  "description": "ITMS Download Manager Desktop App",
   "main": "main.js",
+  "author": {
+    "name": "LiuFa",
+    "email": "liuf@ahtsoft.com"
+  },
+  "license": "MIT",
+  "build": {
+    "productName": "ITMS Download Manager",
+    "appId": "cn.joylau.code.itms-download-manager",
+    "copyright": "Copyright © 合肥安慧, Inc. All rights reserved.",
+    "compression": "store",
+    "asar": true,
+    "extraMetadata":{
+      "main": "main.js"
+    },
+    "files": [
+      "**/*",
+      "build/",
+      "!build/static/js/*.js.map",
+      "!src/"
+    ],
+    "extraResources": [
+      {
+        "from": "./LICENSE",
+        "to": "./../LICENSE.txt"
+      }
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "icon": "./public/icons/win.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "ia32",
+            "x64"
+          ]
+        }
+      ]
+    },
+    "mac": {
+      "icon": "./public/icons/osx.icns",
+      "extendInfo": {
+        "URL types": [
+          {
+            "URL identifier": "ITMS Download Manager",
+            "URL Schemes": [
+              "itms-download-manager"
+            ]
+          }
+        ]
+      }
+    },
+    "dmg": {
+      "icon": "./public/icons/osx.icns"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "./public/icons/win.ico",
+      "uninstallerIcon": "./public/icons/win.ico",
+      "installerHeaderIcon": "./public/icons/win.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "安慧管控平台文件下载器",
+      "license": "./../public/license.txt",
+      "include": "./public/nsis/installer.nsh"
+    }
+  },
   "devDependencies": {
     "@craco/craco": "^5.6.4",
     "antd": "^4.3.3",
     "axios": "^0.19.2",
     "craco-less": "^1.17.0",
     "electron": "^9.0.4",
+    "electron-builder": "^22.7.0",
     "mobx-react": "^6.2.2",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-router": "^5.2.0",
     "react-scripts": "3.4.1"
   },
+  "dependencies": {
+    "@ant-design/icons": "^4.2.1",
+    "event-emitter": "^0.3.5"
+  },
   "scripts": {
     "eletron-start": "electron .",
     "start": "craco start",
-    "build": "craco build",
+    "build": "craco build && electron-builder -mw",
     "test": "craco test",
     "eject": "craco eject"
   },
@@ -37,8 +114,5 @@
       "last 1 safari version"
     ]
   },
-  "dependencies": {
-    "@ant-design/icons": "^4.2.1",
-    "event-emitter": "^0.3.5"
-  }
+  "homepage": "."
 }
