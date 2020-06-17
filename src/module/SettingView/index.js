@@ -49,7 +49,7 @@ class SettingView extends React.Component {
                      addonAfter={<label onClick={() => this.openFileDialog()} className={'hand'}>选择目录</label>}
                      onChange={(e) => this.setState({dir: e.target.value})}
                      value={this.props.store.savePath}
-                     readonly="readonly"
+                     readOnly="readonly"
                      placeholder="默认文件保存路径"/>
             </Form.Item>
               <Form.Item label={'下载线程数:'} style={{marginBottom: 10}}>

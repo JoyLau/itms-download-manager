@@ -4,7 +4,7 @@ const os = window.require('os')
 
 class GlobalStore {
     @observable
-    savePath = os.homedir() + (os.platform() === "win32" ? "\\" : "/" + "Downloads");
+    savePath = os.homedir() + (os.platform() === "win32" ? "\\" : "/" ) + "Downloads";
 
     @observable
     maxJobs = os.cpus().length;
