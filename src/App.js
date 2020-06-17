@@ -6,6 +6,8 @@ import './style.less'
 import LeftSider from "./module/LeftSider";
 import DownloadView from "./module/DownloadView";
 import SettingView from "./module/SettingView";
+import {Provider} from "mobx-react";
+import globalStore from "./util/globalStore";
 
 class App extends Component {
 
@@ -23,14 +25,17 @@ class App extends Component {
         return (
             <div>
                 <ConfigProvider locale={zh_CN}>
-                    <Layout className={'App '}>
-                        <LeftSider onMenuClick={(item) => this.onMenuClick(item)}/>
-                        {this.state.menu && this.state.menu !== 'setting' ?
-                            <DownloadView currentMenu={this.state.menu}/>
-                            :
-                            <SettingView/>
-                        }
-                    </Layout>
+                    <Provider store={globalStore}>
+                        <Layout className={'App '}>
+                            <LeftSider onMenuClick={(item) => this.onMenuClick(item)}/>
+                            {this.state.menu && this.state.menu !== 'setting' ?
+                                <DownloadView currentMenu={this.state.menu}/>
+                                :
+                                <SettingView/>
+                            }
+                        </Layout>
+                    </Provider>
+
                 </ConfigProvider>
             </div>
         );

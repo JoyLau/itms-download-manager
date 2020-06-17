@@ -3,6 +3,7 @@ import {Avatar, Menu, Layout, Dropdown, Badge} from 'antd'
 import { UserOutlined,DownOutlined,DownloadOutlined,CheckOutlined,DeleteOutlined,SettingOutlined} from'@ant-design/icons';
 
 const {Sider} = Layout;
+const os = window.require('os')
 
 class LeftSider extends React.Component {
 
@@ -12,7 +13,7 @@ class LeftSider extends React.Component {
                 <div className="userInfo">
                     <Avatar size='large' style={{ backgroundColor: '#87d068' }} icon={<UserOutlined />} />
                     <div className="userName">
-                        <span>JoyLau</span>
+                        <span>{os.userInfo().username}</span>
                     </div>
                 </div>
                 <Menu onClick={(item) => this.props.onMenuClick(item.key)}
