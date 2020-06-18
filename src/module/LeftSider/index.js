@@ -1,6 +1,7 @@
 import React from 'react'
 import {Avatar, Menu, Layout, Dropdown, Badge} from 'antd'
 import { UserOutlined,DownOutlined,DownloadOutlined,CheckOutlined,DeleteOutlined,SettingOutlined} from'@ant-design/icons';
+import avatarImg from './avatar.png'
 
 const {Sider} = Layout;
 const os = window.require('os')
@@ -10,11 +11,13 @@ class LeftSider extends React.Component {
     render() {
         return (
             <Sider width={160}>
+                <div className="darg-move-window" style={{height:44}}>
+                </div>
                 <div className="userInfo">
-                    <Avatar size='large' style={{ backgroundColor: '#87d068' }} icon={<UserOutlined />} />
-                    <div className="userName">
-                        <span>{os.userInfo().username}</span>
-                    </div>
+                    <Avatar size={50} src={avatarImg}/>
+                </div>
+                <div className="userName">
+                    <span>{os.userInfo().username}</span>
                 </div>
                 <Menu onClick={(item) => this.props.onMenuClick(item.key)}
                       defaultSelectedKeys={['active']}

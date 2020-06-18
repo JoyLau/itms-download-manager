@@ -16,6 +16,10 @@ button, a, input {
     -webkit-app-region: no-drag;
 }
 
+img {
+   -webkit-user-drag: none;
+}
+
 .device-electron-show {
     display: none;
 }
@@ -118,7 +122,6 @@ button, a, input {
 }
 
 .userInfo {
-    margin-top: 30px;
     padding: 20px 0 10px 0px;
     color: white;
     display: flex;
@@ -128,13 +131,13 @@ button, a, input {
 
 
 .userName {
+    text-align: center;
     line-height: 1.2;
-    margin-left: 4px;
     color: white;
-    max-width: 100px;
     white-space: nowrap;
     overflow: hidden;
     margin-top: 2px;
+    margin-bottom: 20px;
 }
 
 .userName .ant-dropdown-trigger {
