@@ -4,38 +4,40 @@ import zh_CN from 'antd/lib/locale-provider/zh_CN';
 import './App.less';
 import './style.less'
 import LeftSider from "./module/LeftSider";
-import DownloadView from "./module/DownloadView";
 import SettingView from "./module/SettingView";
-import {Provider} from "mobx-react";
-import globalStore from "./util/globalStore";
+import {inject, observer} from "mobx-react";
+import Connecter from "./componets/Connecter";
+import ActiveView from "./module/ActiveView";
+import CompleteView from "./module/CompleteView";
+import RemoveView from "./module/RemoveView";
 
+@inject('global')
+@observer
 class App extends Component {
-
-    state = {
-        menu: 'active',
-    }
-
-    onMenuClick(item) {
-        this.setState({
-            menu: item
-        })
-    }
 
     render() {
         return (
             <div>
                 <ConfigProvider locale={zh_CN}>
-                    <Provider store={globalStore}>
+                    <Connecter>
                         <Layout className={'App '}>
-                            <LeftSider onMenuClick={(item) => this.onMenuClick(item)}/>
-                            {this.state.menu && this.state.menu !== 'setting' ?
-                                <DownloadView currentMenu={this.state.menu}/>
+                            <LeftSider
+                                currentMenu={this.props.global.mainMenu}
+                                onMenuClick={(item) => this.props.global.changeMainMenu(item)}
+                            />
+                            {this.props.global.mainMenu === 'active' ?
+                                <ActiveView/>
                                 :
-                                <SettingView/>
+                                this.props.global.mainMenu === 'complete' ?
+                                    <CompleteView/>
+                                    :
+                                    this.props.global.mainMenu === 'remove' ?
+                                        <RemoveView/>
+                                        :
+                                        <SettingView/>
                             }
                         </Layout>
-                    </Provider>
-
+                    </Connecter>
                 </ConfigProvider>
             </div>
         );

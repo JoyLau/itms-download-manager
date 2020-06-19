@@ -6,6 +6,8 @@ const {
 
 let win
 const gotTheLock = app.requestSingleInstanceLock()
+const winTitle = "安慧软件管控平台文件下载器"
+const PROTOCOL = "itms-download-manager"
 
 // 创建浏览器窗口
 function createWindow() {
@@ -18,7 +20,7 @@ function createWindow() {
         titleBarStyle: 'hiddenInset',
         show: false,
         frame: process.platform === 'darwin', // 无边框窗口
-        title: '安慧软件管控平台文件下载器',
+        title: winTitle,
         backgroundColor: '#2e2c29',
         webPreferences: {
             nodeIntegration: true,
@@ -43,11 +45,18 @@ function createWindow() {
 if (!gotTheLock) {
     app.quit()
 } else {
+
+    // 添加 arg 参数为当前目录只为对 Windows 环境下生效
+    app.setAsDefaultProtocolClient(PROTOCOL, process.execPath, [`${__dirname}`]);
+
+    // Windows
     app.on('second-instance', (event, commandLine, workingDirectory) => {
         // 当运行第二个实例时,将会聚焦到myWindow这个窗口
         if (win) {
             if (win.isMinimized()) win.restore()
-            win.focus()
+            win.focus();
+            win.show();
+            processSend(commandLine)
         }
     })
 
@@ -60,6 +69,7 @@ if (!gotTheLock) {
         } else {
             win.showInactive();
         }
+        processSend(urlStr);
     });
 
     app.whenReady().then(createWindow)
@@ -88,4 +98,8 @@ if (!gotTheLock) {
     })
 }
 
+
+function processSend(message) {
+    win.webContents.send('open-protocol', message);
+}
 

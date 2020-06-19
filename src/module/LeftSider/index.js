@@ -1,6 +1,6 @@
 import React from 'react'
-import {Avatar, Menu, Layout, Dropdown, Badge} from 'antd'
-import { UserOutlined,DownOutlined,DownloadOutlined,CheckOutlined,DeleteOutlined,SettingOutlined} from'@ant-design/icons';
+import {Avatar, Menu, Layout} from 'antd'
+import {DownloadOutlined,CheckOutlined,DeleteOutlined,SettingOutlined} from'@ant-design/icons';
 import avatarImg from './avatar.png'
 
 const {Sider} = Layout;
@@ -21,6 +21,7 @@ class LeftSider extends React.Component {
                 </div>
                 <Menu onClick={(item) => this.props.onMenuClick(item.key)}
                       defaultSelectedKeys={['active']}
+                      selectedKeys={[].concat(this.props.currentMenu)}
                       mode="inline" theme="dark">
                     <Menu.Item key="active">
                         <DownloadOutlined />

@@ -7,6 +7,11 @@ process.env.GENERATE_SOURCEMAP = "false";
 process.env.BROWSER = "none"
 
 module.exports = {
+    pluginOptions: {
+        electronBuilder: {
+            externals: ['better-sqlite3']
+        }
+    },
     babel: {
         plugins: [
             ["@babel/plugin-proposal-decorators", { legacy: true }]
