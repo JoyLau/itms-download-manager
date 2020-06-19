@@ -53,7 +53,7 @@ export default class WindowControl extends React.Component{
           {isFullScreen ?<ShrinkOutlined />: <ArrowsAltOutlined />}
         </Button>
         <Button onClick={this.onCloseClick.bind(this)} className="device-electron-show">
-          <CloseOutlined />
+          <CloseOutlined style={{color:'red'}}/>
         </Button>
       </div>
     )

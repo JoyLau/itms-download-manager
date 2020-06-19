@@ -3,11 +3,12 @@ const {
     Tray, globalShortcut, ipcMain
 } = require('electron')
 
+const config = require('../src/util/config')
 
 let win
 const gotTheLock = app.requestSingleInstanceLock()
-const winTitle = "安慧软件管控平台文件下载器"
-const PROTOCOL = "itms-download-manager"
+const winTitle = config.winTitle
+const PROTOCOL = config.PROTOCOL
 
 // 创建浏览器窗口
 function createWindow() {
