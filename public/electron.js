@@ -104,3 +104,123 @@ function processSend(message) {
     win.webContents.send('open-protocol', message);
 }
 
+
+//
+// const {
+//     ConsoleLogger,
+//     DownloadEvent,
+//     DownloadStatus,
+//     DownloadTask,
+//     DownloadTaskGroup,
+//     FileDescriptor,
+//     Logger,
+//     requestMethodHeadFileInformationDescriptor,
+//     CommonUtils
+// } = require ('node-parallel-downloader');
+// const crypto = require('crypto');
+//
+// // 设置不禁用log
+// Logger.setDisabled(false);
+// // 设置Logger的代理类
+// Logger.setProxy(new ConsoleLogger());
+//
+//
+// /**
+//  * 正常下载流程
+//  */
+// async function example() {
+//     // Logger.printStackTrace();
+//     const taskGroup = await new DownloadTaskGroup()
+//         .configConfigDir('./temp_info')
+//         .configMaxWorkerCount(5)
+//         .configProgressTicktockMillis(500)
+//         .configTaskIdGenerator(async (downloadUrl, storageDir, filename) => {
+//             return crypto.createHash('md5').update(downloadUrl).digest('hex');
+//         })
+//         .configFileInfoDescriptor(requestMethodHeadFileInformationDescriptor)
+//         .configHttpRequestOptionsBuilder((requestOptions, taskId, index, from, to, progress) => {
+//             return requestOptions;
+//         })
+//         .configRetryTimes(10000)
+//         .configHttpTimeout(30000)
+//         .loadFromConfigDir();
+//
+//     const task = await taskGroup.newTask(
+//         'https://mirrors.aliyun.com/deepin-cd/15.11/deepin-15.11-amd64.iso',
+//         '/Users/joylau/Desktop',
+//         'CentOS-7-x86_64-Everything-1908.iso'
+//     );
+//
+//     task.on(DownloadEvent.INITIALIZED, (descriptor) => {
+//         Logger.debug('+++DownloadEvent.INITIALIZED:', task.getStatus(), '任务创建直到完成, 只会调用一次');
+//     }).on(DownloadEvent.STARTED, (descriptor) => {
+//         Logger.debug('+++DownloadEvent.STARTED:', task.getStatus());
+//     }).on(DownloadEvent.DOWNLOADING, (descriptor) => {
+//         Logger.debug('+++DownloadEvent.DOWNLOADING:', task.getStatus());
+//     }).on(DownloadEvent.STOPPED, (descriptor) => {
+//         Logger.debug('+++DownloadEvent.STOPPED:', task.getStatus());
+//     }).on(DownloadEvent.PROGRESS, (descriptor, progress) => {
+//         const ticktock = progress.ticktock;
+//         const beautified = CommonUtils.beautifyProgress(progress, ticktock);
+//         const chunks = [];
+//         progress.chunks.forEach((chunkProgress) => {
+//             const beautifiedChunk = CommonUtils.beautifyProgress(chunkProgress, ticktock);
+//             beautifiedChunk.noResp = chunkProgress.noResp;
+//             beautifiedChunk.retry = chunkProgress.retry;
+//             chunks.push(beautifiedChunk);
+//         });
+//         beautified.chunks = chunks;
+//         Logger.debug('+++DownloadEvent.PROGRESS:', JSON.stringify(beautified));
+//     }).on(DownloadEvent.MERGE, (descriptor) => {
+//         Logger.debug('+++DownloadEvent.MERGE:', descriptor, task.getStatus());
+//     }).on(DownloadEvent.FINISHED, (descriptor) => {
+//         Logger.debug('+++DownloadEvent.FINISHED:', descriptor, task.getStatus());
+//     }).on(DownloadEvent.ERROR, (descriptor, errorMessage) => {
+//         Logger.error('+++DownloadEvent.ERROR:', descriptor, errorMessage, task.getStatus());
+//     }).on(DownloadEvent.CANCELED, (descriptor) => {
+//         Logger.warn('+++DownloadEvent.CANCELED:', descriptor, task.getStatus());
+//     });
+//     const started = await task.start();
+//     Logger.assert(started);
+//     return task;
+// }
+// example();
+
+
+
+
+
+
+
+
+
+
+// ipcMain.on('start-download',function () {
+//     download()
+// })
+//
+// function download() {
+//     const DownloadManager = require("electron-download-manager");
+//
+//     DownloadManager.register({
+//         downloadFolder: "/Users/joylau/Desktop"
+//     });
+//     var links = [
+//         "https://mirrors.aliyun.com/centos/7.7.1908/isos/x86_64/CentOS-7-x86_64-Everything-1908.iso",
+//         "https://mirrors.aliyun.com/deepin-cd/15.11/deepin-15.11-amd64.iso"
+//     ];
+//     //Single file download
+//     DownloadManager.bulkDownload({
+//         urls: links,
+//         onResult: (finishedCount, errorsCount, itemUrl) => {
+//             console.info(finishedCount,errorsCount,itemUrl)
+//         }
+//     }, function (error, finished, failed) {
+//         if (error) {
+//             console.log(error);
+//             return;
+//         }
+//
+//         console.log("DONE: " + finished,finished);
+//     });
+// }

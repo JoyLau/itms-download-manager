@@ -10,6 +10,7 @@ import Connecter from "./componets/Connecter";
 import ActiveView from "./module/ActiveView";
 import CompleteView from "./module/CompleteView";
 import RemoveView from "./module/RemoveView";
+import DownloadTask from "./componets/DownloadTask";
 
 @inject('global')
 @observer
@@ -37,6 +38,7 @@ class App extends Component {
                                         <SettingView/>
                             }
                         </Layout>
+                        <DownloadTask/>
                     </Connecter>
                 </ConfigProvider>
             </div>

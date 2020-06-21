@@ -1,4 +1,7 @@
-import EventEmitter from 'event-emitter'
+const EventEmitter = window.require('events').EventEmitter
+
+const crypto = window.require('crypto');
+
 
 export function getStorage(key) {
     let val = localStorage.getItem(key);
@@ -26,6 +29,7 @@ export const statusText = {
     'waiting': '等待中',
     'active': '下载中',
     'complete': '已完成',
+    'remove': '已删除',
     'error': '下载出错'
 };
 
@@ -45,4 +49,8 @@ export function bytesToSize(bytes) {
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return (bytes / Math.pow(k, i)).toPrecision(3) + ' ' + sizes[i];
+}
+
+export function genFileName(downloadUrl) {
+    return crypto.createHash('md5').update(downloadUrl).digest('hex')
 }

@@ -7,44 +7,34 @@ import {
 
 import EmptyContent from "../../componets/EmptyContent";
 import WindowControl from "../../componets/WindowControl";
-import ViewHead from "../../componets/ViewHead";
 import DownloadItem from "../../componets/DownloadItem";
-import {getStatusText,bytesToSize} from '../../util/utils'
+import {getStatusText, bytesToSize, eventBus} from '../../util/utils'
 import SearchOutlined from "@ant-design/icons/lib/icons/SearchOutlined";
+import {inject, observer} from "mobx-react";
+import {CaretRightOutlined, DeleteOutlined, PauseOutlined} from "@ant-design/icons";
 
 
 
 const {shell} = window.require('electron').remote;
 const {Header, Content} = Layout;
 
+@inject('task')
+@observer
 class ActiveView extends Component {
 
     state = {
         selectedItem: null,
-        data: [
-            {
-                title: "file.exe",
-                totalLength: 123334565,
-                progress: 30,
-                eta: '1:43',
-                downloadSpeed: 128,
-                status: 'paused'
-            }
-        ]
     }
 
     onItemClick = item => {
-        item.progress = 100
         this.setState({
             selectedItem: item,
-            data: [item]
         })
     }
 
     renderItem(item) {
         return (
             <DownloadItem
-                // selected={selected}
                 onClick={() => this.onItemClick(item)}
                 item={item}
             />
@@ -68,7 +58,6 @@ class ActiveView extends Component {
             <Card activeTabKey={'info'}
                   className="download-item-details-card"
                   tabList={item ? tabListNoTitle : []}
-                  // onTabChange={(key) => { this.onTabChange(key, 'noTitleKey'); }}
                   style={{
                       width: '100%',
                   }}>
@@ -76,40 +65,31 @@ class ActiveView extends Component {
                     overflow:'auto'
                 }}>
                     <Card.Grid style={{width: '100%', padding: 5}}>
-                        文件名称: {item.title}
+                        文件名称: {item.fileName}
                     </Card.Grid>
                     <Card.Grid style={gridStyle}>
-                        任务状态: {getStatusText(item.status)}
+                        任务状态: {getStatusText(item.fileState)}
                     </Card.Grid>
                     <Card.Grid style={gridStyle}>
-                        文件大小: {bytesToSize(item.totalLength)}
+                        文件大小: {bytesToSize(item.fileSize)}
                     </Card.Grid>
-                    <Card.Grid title={item.dir} style={gridStyle}>
-                        存储目录: {item.dir}
-                    </Card.Grid>
-                    <Card.Grid style={gridStyle}>
-                        已下载: {bytesToSize(item.completedLength)}
+                    <Card.Grid title={item.savePath} style={gridStyle}>
+                        存储目录: {item.savePath}
                     </Card.Grid>
                     <Card.Grid style={gridStyle}>
-                        当前下载速度: {bytesToSize(item.downloadSpeed)}/秒
+                        已下载: {bytesToSize(item.file.size.transferred)}
                     </Card.Grid>
                     <Card.Grid style={gridStyle}>
-                        下载进度: {item.progress}%
+                        当前下载速度: {bytesToSize(item.fileSpeed)}/秒
                     </Card.Grid>
                     <Card.Grid style={gridStyle}>
-                        分片数: {item.numPieces}
-                    </Card.Grid>
-                    <Card.Grid style={gridStyle}>
-                        分片大小: {bytesToSize(item.pieceLength)}
-                    </Card.Grid>
-                    <Card.Grid style={gridStyle}>
-                        连接数: {item.connections}
+                        下载进度: {item.filePercent}%
                     </Card.Grid>
                     <Card.Grid style={{width: '100%', padding: 5}}>
-                        文件位置: {"file.path"}
+                        文件位置: {item.filePath}
                         <a className="device-electron-show server-remote-hide"
                            style={{marginLeft: 5}} title={'在文件管理器中显示'}
-                           onClick={()=>shell.showItemInFolder("file.path")}>
+                           onClick={()=>shell.showItemInFolder(item.filePath)}>
                             <SearchOutlined />
                         </a>
                     </Card.Grid>
@@ -118,22 +98,96 @@ class ActiveView extends Component {
         )
     }
 
+    changeMenuState = () => {
+        if (this.props.task.jobs.filter(item => (item.state !== 'complete' && item.state !== 'remove')).length === 0) {
+            this.setState({
+                selectedItem: null
+            })
+        }
+    }
+
+    remove = () => {
+        this.props.task.updateStateJob(this.state.selectedItem.id, 'remove');
+        this.changeMenuState();
+
+    }
+
+    start = () => {
+        this.props.task.updateStateJob(this.state.selectedItem.id,'active')
+        eventBus.emit('new-task', {})
+    }
+
+    startAll = () => {
+        this.props.task.jobs.filter(item => item.state === 'pause' || item.state === 'error').forEach(value => {
+            this.props.task.updateStateJob(value.id,'active')
+        })
+        eventBus.emit('new-task', {})
+
+    }
+
+    pause = () => {
+        this.props.task.updateStateJob(this.state.selectedItem.id,'paused')
+        eventBus.emit('new-task', {})
+    }
+
+    pauseAll = () => {
+        this.props.task.jobs.filter(item => item.state === 'active').forEach(value => {
+            this.props.task.updateStateJob(value.id,'paused')
+        })
+        eventBus.emit('new-task', {})
+    }
+
     render() {
+        const data = this.props.task.jobs.filter(item => (item.state !== 'complete' && item.state !== 'remove'))
         return (
             <Layout>
                 <Header className="darg-move-window header-toolbar">
-                    <ViewHead/>
+                    <div>
+                        <Button size={'small'} onClick={this.startAll}
+                                icon={<CaretRightOutlined/>}>全部开始</Button>
+                        <Button size={'small'} onClick={this.pauseAll} icon={<PauseOutlined/>}
+                                style={{marginLeft: 5}}>全部暂停</Button>
+                        <Divider type="vertical"/>
+                        {
+                            this.state.selectedItem && (this.state.selectedItem.state === 'paused' || this.state.selectedItem.state === 'error') ?
+                                <Button onClick={this.start}
+                                        disabled={!this.state.selectedItem}
+                                        size={'small'} icon={<CaretRightOutlined/>}/> :
+                                <Button onClick={this.pause}
+                                        disabled={!this.state.selectedItem}
+                                        size={'small'} type="dashed" icon={<PauseOutlined/>}/>
+                        }
+
+                        {
+                            this.state.selectedItem ?
+                                <Popconfirm title="你确定要删除这个下载任务吗?"
+                                            onConfirm={this.remove}
+                                            okText="删除"
+                                            cancelText="取消">
+                                    <Button disabled={!this.state.selectedItem}
+                                            size={'small'} style={{marginLeft: 10}} type="danger"><DeleteOutlined/></Button>
+                                </Popconfirm>
+                                :
+                                <Button disabled={true}
+                                        size={'small'} style={{marginLeft: 10}} type="danger"><DeleteOutlined/></Button>
+                        }
+                    </div>
                     <WindowControl/>
                 </Header>
                 <Content>
-                    {/*<EmptyContent textType={'active'}/>*/}
-
-                    <List
-                        itemLayout="horizontal"
-                        dataSource={this.state.data}
-                        renderItem={item => this.renderItem(item)}/>
+                    {
+                        data.length > 0 ?
+                            <List
+                                itemLayout="horizontal"
+                                dataSource={data}
+                                renderItem={item => this.renderItem(item)}/>
+                                :
+                            <EmptyContent textType={'active'}/>
+                    }
                 </Content>
-                {this.state.selectedItem ? this.renderDetail(this.state.selectedItem) : null}
+                {
+                    this.state.selectedItem && this.props.task.selectById(this.state.selectedItem.id).process ? this.renderDetail(this.props.task.selectById(this.state.selectedItem.id).process) : null
+                }
             </Layout>
         )
     }
