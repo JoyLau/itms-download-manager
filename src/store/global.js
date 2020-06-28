@@ -1,5 +1,5 @@
 import {observable, action} from 'mobx';
-import {db,getStorage,setStorage} from "../util/utils";
+import {getStorage,setStorage} from "../util/utils";
 
 const os = window.require('os')
 

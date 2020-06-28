@@ -1,5 +1,5 @@
 import React, {Component} from 'react'
-import {Button, Divider, Layout, List, Popconfirm} from 'antd'
+import {Button, Divider, Layout, List, message, Popconfirm} from 'antd'
 
 import EmptyContent from "../../componets/EmptyContent";
 import WindowControl from "../../componets/WindowControl";
@@ -9,10 +9,11 @@ import {DeleteOutlined, RollbackOutlined} from "@ant-design/icons";
 import {eventBus} from "../../util/utils";
 
 
-
+const fs = window.require('fs');
+const fse = window.require('fs-extra')
 const {Header, Content} = Layout;
 
-@inject('task')
+@inject('task','global')
 @observer
 class RemoveView extends Component {
 
@@ -29,6 +30,7 @@ class RemoveView extends Component {
     renderItem(item) {
         return (
             <DownloadItem
+                selected={this.state.selectedItem && item.id === this.state.selectedItem.id}
                 onClick={() => this.onItemClick(item)}
                 item={item}
             />
@@ -37,6 +39,14 @@ class RemoveView extends Component {
 
     empty = () => {
         this.props.task.jobs.filter(item => item.state === 'remove').forEach(value => {
+            // 删除下载的文件
+            fse.remove(this.props.global.savePath + "/" + value.taskId,function (err) {
+                if (err){
+                    console.error(err)
+                    message.warn('文件删除失败!');
+                }
+            })
+
             this.props.task.deleteJob(value.id)
         })
 
@@ -47,6 +57,12 @@ class RemoveView extends Component {
 
     remove = () => {
         this.props.task.deleteJob(this.state.selectedItem.id);
+        fse.remove(this.props.global.savePath + "/" + this.state.selectedItem.id,function (err) {
+            if (err){
+                console.error(err)
+                message.warn('文件删除失败!');
+            }
+        })
         this.changeMenuState()
     }
 
@@ -54,6 +70,8 @@ class RemoveView extends Component {
         if (!this.state.selectedItem) {
             return;
         }
+        // 删除目录
+        fse.removeSync(this.props.global.savePath + "/" + this.state.selectedItem.id)
         this.props.task.updateStateJob(this.state.selectedItem.id, 'active');
         eventBus.emit('new-task', this.props.task.selectById(this.state.selectedItem.id))
         this.changeMenuState()
@@ -87,7 +105,7 @@ class RemoveView extends Component {
 
                         {
                             this.state.selectedItem ?
-                                <Popconfirm title="任务删除后将不可恢复"
+                                <Popconfirm title="任务删除后将不可恢复,并且删除该任务已经下载的文件"
                                             onConfirm={this.remove}
                                             okText="删除"
                                             cancelText="取消">

@@ -35,6 +35,7 @@ class ActiveView extends Component {
     renderItem(item) {
         return (
             <DownloadItem
+                selected={this.state.selectedItem && item.id === this.state.selectedItem.id}
                 onClick={() => this.onItemClick(item)}
                 item={item}
             />
@@ -42,61 +43,6 @@ class ActiveView extends Component {
     }
 
 
-
-    renderDetail(item){
-        const gridStyle = {
-            width: '33.333333333%',
-            textAlign: 'left',
-            padding: 5
-        };
-
-        const tabListNoTitle = [{
-            key: 'info',
-            tab: '下载详情',
-        }];
-        return (
-            <Card activeTabKey={'info'}
-                  className="download-item-details-card"
-                  tabList={item ? tabListNoTitle : []}
-                  style={{
-                      width: '100%',
-                  }}>
-                <div style={{
-                    overflow:'auto'
-                }}>
-                    <Card.Grid style={{width: '100%', padding: 5}}>
-                        文件名称: {item.fileName}
-                    </Card.Grid>
-                    <Card.Grid style={gridStyle}>
-                        任务状态: {getStatusText(item.fileState)}
-                    </Card.Grid>
-                    <Card.Grid style={gridStyle}>
-                        文件大小: {bytesToSize(item.fileSize)}
-                    </Card.Grid>
-                    <Card.Grid title={item.savePath} style={gridStyle}>
-                        存储目录: {item.savePath}
-                    </Card.Grid>
-                    <Card.Grid style={gridStyle}>
-                        已下载: {bytesToSize(item.file.size.transferred)}
-                    </Card.Grid>
-                    <Card.Grid style={gridStyle}>
-                        当前下载速度: {bytesToSize(item.fileSpeed)}/秒
-                    </Card.Grid>
-                    <Card.Grid style={gridStyle}>
-                        下载进度: {item.filePercent}%
-                    </Card.Grid>
-                    <Card.Grid style={{width: '100%', padding: 5}}>
-                        文件位置: {item.filePath}
-                        <a className="device-electron-show server-remote-hide"
-                           style={{marginLeft: 5}} title={'在文件管理器中显示'}
-                           onClick={()=>shell.showItemInFolder(item.filePath)}>
-                            <SearchOutlined />
-                        </a>
-                    </Card.Grid>
-                </div>
-            </Card>
-        )
-    }
 
     changeMenuState = () => {
         if (this.props.task.jobs.filter(item => (item.state !== 'complete' && item.state !== 'remove')).length === 0) {
@@ -138,7 +84,6 @@ class ActiveView extends Component {
     }
 
     render() {
-        const data = this.props.task.jobs.filter(item => (item.state !== 'complete' && item.state !== 'remove'))
         return (
             <Layout>
                 <Header className="darg-move-window header-toolbar">
@@ -176,18 +121,15 @@ class ActiveView extends Component {
                 </Header>
                 <Content>
                     {
-                        data.length > 0 ?
+                        this.props.task.jobs.filter(item => (item.state !== 'complete' && item.state !== 'remove')).length > 0 ?
                             <List
                                 itemLayout="horizontal"
-                                dataSource={data}
+                                dataSource={this.props.task.jobs.filter(item => (item.state !== 'complete' && item.state !== 'remove'))}
                                 renderItem={item => this.renderItem(item)}/>
                                 :
                             <EmptyContent textType={'active'}/>
                     }
                 </Content>
-                {
-                    this.state.selectedItem && this.props.task.selectById(this.state.selectedItem.id).process ? this.renderDetail(this.props.task.selectById(this.state.selectedItem.id).process) : null
-                }
             </Layout>
         )
     }

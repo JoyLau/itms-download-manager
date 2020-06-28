@@ -14,9 +14,6 @@
     "copyright": "Copyright © 合肥安慧, Inc. All rights reserved.",
     "compression": "store",
     "asar": true,
-    "extraMetadata": {
-      "main": "./public/electron.js"
-    },
     "files": [
       "build/",
       "!node_modules/"
@@ -68,7 +65,7 @@
       "installerHeaderIcon": "./static/icons/win.ico",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "安慧管控平台文件下载器",
+      "shortcutName": "安慧管控平台文件下载器(通用版)",
       "license": "./../static/license.html",
       "include": "./static/nsis/installer.nsh"
     }
@@ -84,12 +81,16 @@
     "electron": "^9.0.4",
     "electron-builder": "^22.7.0",
     "electron-rebuild": "^1.11.0",
+    "fs-extra": "^9.0.1",
     "mobx": "^5.15.4",
     "mobx-react": "^6.2.2",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
+    "react-scripts": "3.4.1",
+    "readdirp": "^3.4.0",
     "request": "^2.88.2",
-    "request-progress": "^3.0.0"
+    "request-progress": "^3.0.0",
+    "wrench": "^1.5.9"
   },
   "dependencies": {},
   "scripts": {

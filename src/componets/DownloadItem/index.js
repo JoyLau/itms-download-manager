@@ -1,16 +1,12 @@
 import React from 'react'
-import {Avatar, List, Progress} from 'antd'
-import {getFileExt, bytesToSize} from '../../util/utils'
-import request from 'request';
-import progress from 'request-progress';
+import {Avatar, Divider, List, Progress} from 'antd'
+import {CheckOutlined,CheckCircleTwoTone} from "@ant-design/icons";
+import {getFileExt, bytesToSize,formatTime} from '../../util/utils'
 import {inject, observer} from "mobx-react";
-import Bagpipe from 'bagpipe';
 
 
-const fs = window.require('fs')
 
-@inject('task')
-@inject('global')
+@inject('task','global')
 @observer
 class DownloadItem extends React.Component {
 
@@ -18,7 +14,7 @@ class DownloadItem extends React.Component {
         const styles = {
             paddingLeft: 10,
             paddingRight: 10,
-            backgroundColor: this.props.selected ? '#d9ecfe' : ''
+            backgroundColor: this.props.selected ? '#e6f7ff' : ''
         };
 
         const content = {
@@ -35,20 +31,27 @@ class DownloadItem extends React.Component {
                 <List.Item.Meta
                     avatar={<Avatar size="large">{getFileExt(item.name)}</Avatar>}
                     title={<span>{item.name}</span>}
-                    description={bytesToSize(item.size.transferred)}
+                    description={
+                        <span>
+                            {bytesToSize(item.process.finishSize)}
+                            <Divider type="vertical"/>
+                            当前下载: {item.process.finishCount} / 总计: {item.process.total}
+                        </span>}
                 />
                 <div style={content}>
                     <div style={{width: 170}}>
-                        <Progress percent={item.percent} showInfo={false} status="active"/>
+                        <Progress percent={item.process.percent} showInfo={false} status={item.status === 'active' ? 'active' : item.status === 'error' ? "exception" : item.status === 'complete' ? "success" : 'normal'}/>
                         <div style={{display: 'flex', justifyContent: 'space-between'}}>
-                            <span>{item.time.remaining}</span>
-                            <span>{item.percent}%</span>
+                            <span>{item.process.remainingTime !== 0 ? formatTime(item.process.remainingTime) : ''}</span>
+                            <span>{Number(item.process.percent) === 100 ? '100' : item.process.percent}%</span>
                         </div>
                     </div>
-                    {item.state === 'complete' ? <span>已完成</span> : null}
+                    {item.state === 'waiting' ? <span style={{color:'orange'}}>等待中</span> : null}
                     {item.state === 'error' ? <span style={{color:'red'}}>下载出错</span> : null}
-                    {item.state === 'active' ? <span>{bytesToSize(item.speed)}/s</span> : null}
+                    {item.state === 'remove' ? <span>已删除</span> : null}
+                    {item.state === 'active' ? <span>{bytesToSize(item.process.speed)}/s</span> : null}
                     {item.state === 'paused' ? <span>暂停中</span> : null}
+                    {item.state === 'complete' ? <span style={{color:'#52c41a'}}><CheckCircleTwoTone twoToneColor="#52c41a" />  已完成</span> : null}
                 </div>
 
             </List.Item>

@@ -3,12 +3,11 @@ const {
     Tray, globalShortcut, ipcMain
 } = require('electron')
 
-const config = require('../src/util/config')
 
 let win
 const gotTheLock = app.requestSingleInstanceLock()
-const winTitle = config.winTitle
-const PROTOCOL = config.PROTOCOL
+const winTitle = "安慧软件管控平台文件下载器"
+const PROTOCOL = "itms-download-manager"
 
 // 创建浏览器窗口
 function createWindow() {
@@ -24,13 +23,14 @@ function createWindow() {
         title: winTitle,
         backgroundColor: '#2e2c29',
         webPreferences: {
+            webSecurity: false,
             nodeIntegration: true,
             nodeIntegrationInWorker: true
         }
     })
 
     if (app.isPackaged) {
-        win.loadURL(`file://${__dirname}/build/index.html`);
+        win.loadURL(`file://${__dirname}/index.html`);
     } else {
         win.loadURL('http://localhost:3000');
     }

@@ -19,8 +19,6 @@ export function setStorage(key, value) {
     localStorage.setItem(key, JSON.stringify(value))
 }
 
-export const db = window.require('better-sqlite3')('db.db',{ verbose: console.log });
-
 export const eventBus = new EventEmitter();
 
 
@@ -48,9 +46,31 @@ export function bytesToSize(bytes) {
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return (bytes / Math.pow(k, i)).toPrecision(3) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
 export function genFileName(downloadUrl) {
     return crypto.createHash('md5').update(downloadUrl).digest('hex')
+}
+
+/*
+ * 将秒数格式化时间
+ * @param {Number} seconds: 整数类型的秒数
+ * @return {String} time: 格式化之后的时间
+ */
+export function formatTime(seconds) {
+    seconds = Math.floor(seconds);
+    let min = Math.floor(seconds / 60),
+        second = seconds % 60,
+        hour, newMin;
+
+    if (min > 60) {
+        hour = Math.floor(min / 60);
+        newMin = min % 60;
+    }
+
+    if (second < 10) { second = '0' + second;}
+    if (min < 10) { min = '0' + min;}
+
+    return hour? (hour + ':' + newMin + ':' + second) : (min + ':' + second);
 }

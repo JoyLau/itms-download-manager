@@ -12,11 +12,6 @@ import {
 import WindowControl from "../../componets/WindowControl";
 import {inject, observer} from "mobx-react";
 
-import audio1 from'./5809.mp3'
-import audio2 from'./6953.mp3'
-import audio3 from'./9723.mp3'
-
-
 const {Header} = Layout;
 const {dialog} = window.require('electron').remote;
 
@@ -44,8 +39,9 @@ class SettingView extends React.Component {
     }
 
     changeAudio = e => {
+        const mp3 = require('./' + e.target.value)
         this.setState({
-            audio : e.target.value === "5809.mp3" ? audio1 : e.target.value === "6953.mp3" ? audio2 : audio3
+            audio : mp3
         })
         this.props.global.changeFinishAudio(e.target.value)
     }
