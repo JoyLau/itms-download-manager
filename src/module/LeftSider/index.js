@@ -1,11 +1,14 @@
 import React from 'react'
-import {Avatar, Menu, Layout} from 'antd'
-import {DownloadOutlined,CheckOutlined,DeleteOutlined,SettingOutlined} from'@ant-design/icons';
+import {Avatar, Menu, Layout, Badge} from 'antd'
+import {DownloadOutlined,CheckOutlined,SettingOutlined} from'@ant-design/icons';
 import avatarImg from './avatar.png'
+import {inject, observer} from "mobx-react";
 
 const {Sider} = Layout;
 const os = window.require('os')
 
+@inject("task")
+@observer
 class LeftSider extends React.Component {
 
     render() {
@@ -28,13 +31,13 @@ class LeftSider extends React.Component {
                         <span>正在下载</span>
                     </Menu.Item>
                     <Menu.Item key="complete">
-                        <CheckOutlined />
-                        <span>已完成</span>
+                        <Badge count={this.props.task.getJobs().filter(item => (item.state === 'complete' && item.isNew)).length}
+                               offset={[10,0]}
+                        >
+                            <CheckOutlined />
+                            <span >已完成</span>
+                        </Badge>
                     </Menu.Item>
-                    {/*<Menu.Item key="remove">*/}
-                    {/*    <DeleteOutlined />*/}
-                    {/*    <span>回收站</span>*/}
-                    {/*</Menu.Item>*/}
                     <Menu.Item key="setting">
                         <SettingOutlined />
                         <span>设置</span>

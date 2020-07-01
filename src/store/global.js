@@ -1,5 +1,6 @@
 import {observable, action, configure} from 'mobx';
 import {getStorage,setStorage} from "../util/utils";
+import config from '../util/config'
 
 const os = window.require('os')
 
@@ -18,7 +19,7 @@ class Global {
 
     // 文件保存目录
     @observable
-    savePath = getStorage('savePath') ? getStorage('savePath') : (os.homedir() + (os.platform() === "win32" ? "\\" : "/" ) + "Downloads")
+    savePath = getStorage('savePath') ? getStorage('savePath') : (os.homedir() + config.sep + "Downloads")
 
     // 最大线程数
     @observable

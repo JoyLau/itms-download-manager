@@ -10,7 +10,6 @@ configure({
 class Task {
 
     constructor() {
-        console.info("constructor")
         this.initJobs()
     }
 
@@ -44,7 +43,7 @@ class Task {
     @action
     addJob(job) {
         this.jobs = this.jobs.concat(job)
-        setStorage("jobs", this.jobs)
+        // setStorage("jobs", this.jobs)
     }
 
     @action
@@ -55,7 +54,7 @@ class Task {
             }
             return value;
         })
-        setStorage("jobs",this.jobs)
+        // setStorage("jobs",this.jobs)
     }
 
     @action
@@ -66,13 +65,13 @@ class Task {
             }
             return value;
         })
-        setStorage("jobs",this.jobs)
+        // setStorage("jobs",this.jobs)
     }
 
     @action
     deleteJob(jobId) {
         this.jobs = this.jobs.filter(value => value.id !== jobId)
-        setStorage("jobs", this.jobs)
+        // setStorage("jobs", this.jobs)
     }
 }
 

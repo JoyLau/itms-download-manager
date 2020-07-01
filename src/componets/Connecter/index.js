@@ -50,6 +50,13 @@ class Connecter extends React.Component {
                 return;
             }
 
+            if (data.extra.name === 'passVeh' && data.extra.type === 'all'){
+                if (!data.extra.vehPassByIds) {
+                    message.warn('参数 extra.vehPassByIds 不存在, 请检查!');
+                    return;
+                }
+            }
+
             // 发送通知
             eventBus.emit(data.extra.name + '-' + data.extra.type, data)
 

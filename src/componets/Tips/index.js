@@ -20,8 +20,6 @@ class Tips extends React.Component {
     startTips = (taskName,filePath) => {
         this.playAudio()
         this.playNotification(taskName,filePath)
-
-
     }
 
     playAudio = () => {

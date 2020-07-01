@@ -4,8 +4,9 @@ import {Button, Layout, List, message, Popconfirm} from 'antd'
 import EmptyContent from "../../componets/EmptyContent";
 import WindowControl from "../../componets/WindowControl";
 import {DeleteOutlined, FolderOpenOutlined} from "@ant-design/icons";
-import DownloadItem from "../../componets/DownloadItem";
 import {inject, observer} from "mobx-react";
+import config from '../../util/config'
+import CompleteItem from "./completeItem";
 
 
 const {shell} = window.require('electron').remote;
@@ -23,11 +24,12 @@ class CompleteView extends Component {
         this.setState({
             selectedItem: item,
         })
+        this.props.task.updateJob(item.id,'isNew',false);
     }
 
     renderItem(item) {
         return (
-            <DownloadItem
+            <CompleteItem
                 selected={this.state.selectedItem && item.id === this.state.selectedItem.id}
                 onClick={() => this.onItemClick(item)}
                 item={item}
@@ -37,7 +39,7 @@ class CompleteView extends Component {
 
     openTaskFile = () => {
         if (!this.state.selectedItem) return;
-        shell.showItemInFolder(this.props.global.savePath + "/" + this.state.selectedItem.name.replace(".zip","") + this.state.selectedItem.id + '.zip' )
+        shell.showItemInFolder(this.props.global.savePath + config.sep + this.state.selectedItem.name.replace(".zip","") + this.state.selectedItem.id + '.zip' )
     }
 
     removeTask = () => {
@@ -50,7 +52,7 @@ class CompleteView extends Component {
         let that = this;
         if (!this.state.selectedItem) return;
         this.props.task.deleteJob(this.state.selectedItem.id);
-        fse.remove(this.props.global.savePath + "/" + this.state.selectedItem.name.replace(".zip","") + this.state.selectedItem.id + '.zip',function (err) {
+        fse.remove(this.props.global.savePath + config.sep + this.state.selectedItem.name.replace(".zip","") + this.state.selectedItem.id + '.zip',function (err) {
             if (err){
                 console.error(err)
                 message.warn('文件删除失败!');

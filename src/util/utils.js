@@ -1,5 +1,6 @@
 import React from 'react'
 import {LoadingOutlined} from "@ant-design/icons";
+import Dexie from "dexie";
 
 const EventEmitter = window.require('events').EventEmitter
 
@@ -10,6 +11,11 @@ const compressing = window.require('compressing');
 const fse = window.require('fs-extra');
 
 const publicKey = "itms-download-manager";
+
+const db = new Dexie("metaDB");
+db.version(1).stores({ meta: 'taskId'});
+
+export const metaDB = db.table('meta')
 
 
 export const statusText = {
@@ -155,15 +161,8 @@ export function parseURLQueryString(query){
 export async function zip(source,dest,clean) {
     await compressing.zip.compressDir(source, dest)
         .then(() => {
-            console.log('zip success');
             if (clean){
-                fse.remove(source,function (err) {
-                    if (!err){
-                        console.info(source,"delete success")
-                    } else {
-                        console.error(err)
-                    }
-                })
+                fse.removeSync(source)
             }
 
         })
@@ -173,10 +172,12 @@ export async function zip(source,dest,clean) {
 /**
  * 解压缩
  */
-export async function unzip(source,dest) {
+export async function unzip(source,dest,clean) {
     await compressing.zip.uncompress(source, dest)
         .then(() => {
-            console.log('unzip success');
+            if (clean){
+                fse.removeSync(source)
+            }
         })
 }
 

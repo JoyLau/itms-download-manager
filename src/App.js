@@ -10,9 +10,6 @@ import Connecter from "./componets/Connecter";
 import ActiveView from "./module/ActiveView";
 import CompleteView from "./module/CompleteView";
 
-import Dexie from 'dexie';
-import {getStorage, setStorage} from "./util/utils";
-
 
 // 全局配置
 notification.config({
@@ -25,33 +22,6 @@ notification.config({
 @inject('global')
 @observer
 class App extends Component {
-
-    componentDidMount() {
-
-
-        const db = new Dexie("FriendDatabase");
-        db.version(111).stores({ friends: 'id,state,process.percent'});
-
-        db.friends.bulkPut(getStorage('jobs'))
-
-        // db.transaction('rw', db.friends, async() => {
-        //
-        //     // Make sure we have something in DB:
-        //     if ((await db.friends.where({name: 'Josephine'}).count()) === 0) {
-        //         const id = await db.friends.add({name: "Josephine", age: 21});
-        //         alert (`Addded friend with id ${id}`);
-        //     }
-        //
-        //     // Query:
-        //     const youngFriends = await db.friends.where("age").below(25).toArray();
-        //
-        //     // Show result:
-        //     alert ("My young friends: " + JSON.stringify(youngFriends));
-        //
-        // }).catch(e => {
-        //     alert(e.stack || e);
-        // });
-    }
 
     render() {
         return (
@@ -68,9 +38,6 @@ class App extends Component {
                                 :
                                 this.props.global.mainMenu === 'complete' ?
                                     <CompleteView/>
-                                    // :
-                                    // this.props.global.mainMenu === 'remove' ?
-                                    //     <RemoveView/>
                                         :
                                         this.props.global.mainMenu === 'setting' ?
                                             <SettingView/>

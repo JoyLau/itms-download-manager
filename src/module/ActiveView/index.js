@@ -1,21 +1,14 @@
 import React, {Component} from 'react'
-import {
-    Button, Dropdown, Layout, List,
-    Modal, Input, Divider, Menu, message,
-    Form, Upload, Popconfirm, Card
-} from 'antd'
+import {Button, Layout, List, Divider, Popconfirm} from 'antd'
 
 import EmptyContent from "../../componets/EmptyContent";
 import WindowControl from "../../componets/WindowControl";
-import DownloadItem from "../../componets/DownloadItem";
-import {getStatusText, bytesToSize, eventBus} from '../../util/utils'
-import SearchOutlined from "@ant-design/icons/lib/icons/SearchOutlined";
+import {eventBus} from '../../util/utils'
 import {inject, observer} from "mobx-react";
 import {CaretRightOutlined, DeleteOutlined, PauseOutlined} from "@ant-design/icons";
+import ActiveItem from "./activeItem";
 
 
-
-const {shell} = window.require('electron').remote;
 const {Header, Content} = Layout;
 
 @inject('task')
@@ -34,14 +27,13 @@ class ActiveView extends Component {
 
     renderItem(item) {
         return (
-            <DownloadItem
+            <ActiveItem
                 selected={this.state.selectedItem && item.id === this.state.selectedItem.id}
                 onClick={() => this.onItemClick(item)}
                 item={item}
             />
         )
     }
-
 
 
     changeMenuState = () => {
@@ -59,26 +51,26 @@ class ActiveView extends Component {
     }
 
     start = () => {
-        this.props.task.updateStateJob(this.state.selectedItem.id,'active')
+        this.props.task.updateStateJob(this.state.selectedItem.id, 'active')
         eventBus.emit('new-task', {})
     }
 
     startAll = () => {
         this.props.task.getJobs().filter(item => item.state === 'pause' || item.state === 'error').forEach(value => {
-            this.props.task.updateStateJob(value.id,'active')
+            this.props.task.updateStateJob(value.id, 'active')
         })
         eventBus.emit('new-task', {})
 
     }
 
     pause = () => {
-        this.props.task.updateStateJob(this.state.selectedItem.id,'paused')
+        this.props.task.updateStateJob(this.state.selectedItem.id, 'paused')
         eventBus.emit('new-task', {})
     }
 
     pauseAll = () => {
         this.props.task.getJobs().filter(item => item.state === 'active').forEach(value => {
-            this.props.task.updateStateJob(value.id,'paused')
+            this.props.task.updateStateJob(value.id, 'paused')
         })
         eventBus.emit('new-task', {})
     }
@@ -110,7 +102,8 @@ class ActiveView extends Component {
                                             okText="删除"
                                             cancelText="取消">
                                     <Button disabled={!this.state.selectedItem}
-                                            size={'small'} style={{marginLeft: 10}} type="danger"><DeleteOutlined/></Button>
+                                            size={'small'} style={{marginLeft: 10}}
+                                            type="danger"><DeleteOutlined/></Button>
                                 </Popconfirm>
                                 :
                                 <Button disabled={true}
@@ -126,7 +119,7 @@ class ActiveView extends Component {
                                 itemLayout="horizontal"
                                 dataSource={this.props.task.getJobs().filter(item => (item.state !== 'complete' && item.state !== 'remove'))}
                                 renderItem={item => this.renderItem(item)}/>
-                                :
+                            :
                             <EmptyContent textType={'active'}/>
                     }
                 </Content>
@@ -135,4 +128,5 @@ class ActiveView extends Component {
     }
 
 }
+
 export default ActiveView
