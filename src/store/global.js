@@ -1,20 +1,18 @@
-import {observable, action} from 'mobx';
+import {observable, action, configure} from 'mobx';
 import {getStorage,setStorage} from "../util/utils";
 
 const os = window.require('os')
 
-
-// 初始化配置项
-// db.prepare("INSERT INTO config (key, value) VALUES (?, ?)").run('savePath',os.homedir() + (os.platform() === "win32" ? "\\" : "/" ) + "Downloads")
-// db.prepare("INSERT INTO config (key, value) VALUES (?, ?)").run('maxJobs',os.cpus().length / 2)
-
+configure({
+    enforceActions: 'always'
+});
 
 /**
  * 全局配置
  */
 class Global {
 
-    // 主菜单
+    // 当前显示的左侧菜单项
     @observable
     mainMenu = 'active'
 
@@ -29,6 +27,9 @@ class Global {
     // 下载完成播放的提示音
     @observable
     finishAudio = getStorage('finishAudio') ? getStorage('finishAudio') : "5809.mp3"
+
+    @observable
+    finishTip = getStorage('finishTip') ? getStorage('finishTip') : true
 
     @action
     changeMainMenu(mainMenu){
@@ -51,6 +52,12 @@ class Global {
     changeFinishAudio(finishAudio) {
         this.finishAudio = finishAudio
         setStorage('finishAudio',finishAudio)
+    }
+
+    @action
+    changeFinishTip(checked) {
+        this.finishTip = checked
+        setStorage('finishTip',checked)
     }
 }
 

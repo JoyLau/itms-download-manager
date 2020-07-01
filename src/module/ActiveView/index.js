@@ -45,7 +45,7 @@ class ActiveView extends Component {
 
 
     changeMenuState = () => {
-        if (this.props.task.jobs.filter(item => (item.state !== 'complete' && item.state !== 'remove')).length === 0) {
+        if (this.props.task.getJobs().filter(item => (item.state !== 'complete' && item.state !== 'remove')).length === 0) {
             this.setState({
                 selectedItem: null
             })
@@ -64,7 +64,7 @@ class ActiveView extends Component {
     }
 
     startAll = () => {
-        this.props.task.jobs.filter(item => item.state === 'pause' || item.state === 'error').forEach(value => {
+        this.props.task.getJobs().filter(item => item.state === 'pause' || item.state === 'error').forEach(value => {
             this.props.task.updateStateJob(value.id,'active')
         })
         eventBus.emit('new-task', {})
@@ -77,7 +77,7 @@ class ActiveView extends Component {
     }
 
     pauseAll = () => {
-        this.props.task.jobs.filter(item => item.state === 'active').forEach(value => {
+        this.props.task.getJobs().filter(item => item.state === 'active').forEach(value => {
             this.props.task.updateStateJob(value.id,'paused')
         })
         eventBus.emit('new-task', {})
@@ -121,10 +121,10 @@ class ActiveView extends Component {
                 </Header>
                 <Content>
                     {
-                        this.props.task.jobs.filter(item => (item.state !== 'complete' && item.state !== 'remove')).length > 0 ?
+                        this.props.task.getJobs().filter(item => (item.state !== 'complete' && item.state !== 'remove')).length > 0 ?
                             <List
                                 itemLayout="horizontal"
-                                dataSource={this.props.task.jobs.filter(item => (item.state !== 'complete' && item.state !== 'remove'))}
+                                dataSource={this.props.task.getJobs().filter(item => (item.state !== 'complete' && item.state !== 'remove'))}
                                 renderItem={item => this.renderItem(item)}/>
                                 :
                             <EmptyContent textType={'active'}/>

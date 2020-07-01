@@ -1,5 +1,5 @@
 import React, {Component} from 'react'
-import {Button, Layout, List, Popconfirm} from 'antd'
+import {Button, Layout, List, message, Popconfirm} from 'antd'
 
 import EmptyContent from "../../componets/EmptyContent";
 import WindowControl from "../../componets/WindowControl";
@@ -9,6 +9,7 @@ import {inject, observer} from "mobx-react";
 
 
 const {shell} = window.require('electron').remote;
+const fse = window.require('fs-extra')
 const {Header, Content} = Layout;
 
 @inject('task','global')
@@ -35,16 +36,31 @@ class CompleteView extends Component {
     }
 
     openTaskFile = () => {
-        shell.showItemInFolder(this.props.global.savePath + "/" + this.state.selectedItem.id)
+        if (!this.state.selectedItem) return;
+        shell.showItemInFolder(this.props.global.savePath + "/" + this.state.selectedItem.name.replace(".zip","") + this.state.selectedItem.id + '.zip' )
     }
 
-    remove = () => {
-        this.props.task.updateStateJob(this.state.selectedItem.id, 'remove');
+    removeTask = () => {
+        if (!this.state.selectedItem) return;
+        this.props.task.deleteJob(this.state.selectedItem.id);
         this.changeMenuState();
     }
 
+    removeTaskAndFile = () => {
+        let that = this;
+        if (!this.state.selectedItem) return;
+        this.props.task.deleteJob(this.state.selectedItem.id);
+        fse.remove(this.props.global.savePath + "/" + this.state.selectedItem.name.replace(".zip","") + this.state.selectedItem.id + '.zip',function (err) {
+            if (err){
+                console.error(err)
+                message.warn('文件删除失败!');
+            }
+        })
+        that.changeMenuState();
+    }
+
     changeMenuState = () => {
-        if (this.props.task.jobs.filter(item => item.state === 'complete').length === 0) {
+        if (this.props.task.getJobs().filter(item => item.state === 'complete').length === 0) {
             this.setState({
                 selectedItem: null
             })
@@ -53,26 +69,23 @@ class CompleteView extends Component {
 
 
     render() {
-        let data = this.props.task.jobs.filter(item => item.state === 'complete')
-
-        data = data.reverse()
-
-
         return (
             <Layout>
                 <Header className="darg-move-window header-toolbar">
                     <div>
                         <Button size={'small'}
+                                disabled={!this.state.selectedItem}
                                 onClick={this.openTaskFile}
                                 type={this.state.selectedItem ? "primary" : null}
                                 icon={<FolderOpenOutlined />}>打开文件位置</Button>
 
                         {
                             this.state.selectedItem ?
-                                <Popconfirm title="确定删除该任务?"
-                                            onConfirm={this.remove}
-                                            okText="删除"
-                                            cancelText="取消">
+                                <Popconfirm title="是否同时删除文件?"
+                                            onConfirm={this.removeTaskAndFile}
+                                            onCancel={this.removeTask}
+                                            okText="仅删除任务"
+                                            cancelText="删除文件">
                                     <Button disabled={!this.state.selectedItem}
                                             size={'small'} style={{marginLeft: 10}} type="danger"><DeleteOutlined/></Button>
                                 </Popconfirm>
@@ -85,10 +98,10 @@ class CompleteView extends Component {
                 </Header>
                 <Content>
                     {
-                        data.length > 0 ?
+                        this.props.task.getJobs().filter(item => item.state === 'complete').reverse().length > 0 ?
                             <List
                                 itemLayout="horizontal"
-                                dataSource={data}
+                                dataSource={this.props.task.getJobs().filter(item => item.state === 'complete').reverse()}
                                 renderItem={item => this.renderItem(item)}/>
                             :
                             <EmptyContent textType={'complete'}/>

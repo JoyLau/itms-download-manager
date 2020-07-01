@@ -1,17 +1,44 @@
-import {observable, action} from 'mobx';
+import {observable, action, configure,autorun,reaction, toJS} from 'mobx';
 import {getStorage, setStorage} from "../util/utils";
 
+configure({
+    enforceActions: 'always'
+});
 /**
  * 任务进度配置
  */
 class Task {
 
+    constructor() {
+        console.info("constructor")
+        this.initJobs()
+    }
+
     // 主任务
     @observable
-    jobs = getStorage('jobs') ? getStorage('jobs') : []
+    jobs = []
+
+    change = autorun(
+        () => {}
+    )
+
+    @action
+    initJobs() {
+        if (getStorage('jobs')) {
+            this.jobs = getStorage('jobs')
+        }
+    }
+
+    getJobs(){
+        return toJS(this.jobs)
+    }
 
     selectById(jobId){
-        return this.jobs.find(value => value.id === jobId)
+        return this.getJobs().find(value => value.id === jobId)
+    }
+
+    selectValueById(jobId, key){
+        return this.selectById(jobId)[key]
     }
 
     @action
@@ -32,10 +59,10 @@ class Task {
     }
 
     @action
-    updateJob(job) {
+    updateJob(jobId, key, obj) {
         this.jobs = this.jobs.map(value => {
-            if (value.id === job.id) {
-                value = job
+            if (value.id === jobId) {
+                value[key] = obj
             }
             return value;
         })

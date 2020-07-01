@@ -1,16 +1,9 @@
 import React from 'react'
-import {
-    Layout,
-    Form,
-    Input,
-    Radio,
-    Slider,
-} from 'antd'
-import {
-    FolderOutlined,
-} from '@ant-design/icons';
+import {Layout, Form, Input, Radio, Slider, Switch,} from 'antd'
+import {FolderOutlined} from '@ant-design/icons';
 import WindowControl from "../../componets/WindowControl";
 import {inject, observer} from "mobx-react";
+import {eventBus} from "../../util/utils";
 
 const {Header} = Layout;
 const {dialog} = window.require('electron').remote;
@@ -20,10 +13,6 @@ const os = window.require('os')
 @inject('global')
 @observer
 class SettingView extends React.Component {
-
-    state = {
-        audio: null
-    }
 
     openFileDialog() {
         dialog.showOpenDialog({
@@ -39,11 +28,8 @@ class SettingView extends React.Component {
     }
 
     changeAudio = e => {
-        const mp3 = require('./' + e.target.value)
-        this.setState({
-            audio : mp3
-        })
         this.props.global.changeFinishAudio(e.target.value)
+        eventBus.emit('play-audio', {})
     }
 
 
@@ -69,7 +55,7 @@ class SettingView extends React.Component {
                                    readOnly="readonly"
                                    placeholder="默认文件保存路径"/>
                         </Form.Item>
-                        <Form.Item label={'下载线程数:'} style={{marginBottom: 10}}>
+                        <Form.Item label={'下载最大线程数:'} style={{marginBottom: 10}}>
                             <Slider
                                 min={1}
                                 max={os.cpus().length}
@@ -79,12 +65,14 @@ class SettingView extends React.Component {
                             />
                         </Form.Item>
                         <Form.Item label={'下载完成提示音:'} onChange={this.changeAudio} style={{marginBottom: 10}}>
-                            <audio src={this.state.audio} autoPlay={true} hidden={true}/>
                             <Radio.Group  value={this.props.global.finishAudio}>
                                 <Radio value={'5809.mp3'}>提示音 1</Radio>
                                 <Radio value={'6953.mp3'}>提示音 2</Radio>
                                 <Radio value={'9723.mp3'}>提示音 3</Radio>
                             </Radio.Group>
+                        </Form.Item>
+                        <Form.Item label={'下载完成弹出通知:'} style={{marginBottom: 10}}>
+                            <Switch checked={this.props.global.finishTip} onChange={(checked) => this.props.global.changeFinishTip(checked)} />
                         </Form.Item>
                     </Form>
                 </div>

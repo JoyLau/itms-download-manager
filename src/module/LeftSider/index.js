@@ -31,10 +31,10 @@ class LeftSider extends React.Component {
                         <CheckOutlined />
                         <span>已完成</span>
                     </Menu.Item>
-                    <Menu.Item key="remove">
-                        <DeleteOutlined />
-                        <span>回收站</span>
-                    </Menu.Item>
+                    {/*<Menu.Item key="remove">*/}
+                    {/*    <DeleteOutlined />*/}
+                    {/*    <span>回收站</span>*/}
+                    {/*</Menu.Item>*/}
                     <Menu.Item key="setting">
                         <SettingOutlined />
                         <span>设置</span>

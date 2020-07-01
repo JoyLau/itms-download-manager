@@ -1,10 +1,12 @@
 import global from "./global";
 import task from './task';
+import sysCode from "./sysCode";
 
 
 const stores = {
     task,
-    global
+    global,
+    sysCode
 };
 
 export default stores;

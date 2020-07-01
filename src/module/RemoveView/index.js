@@ -9,7 +9,6 @@ import {DeleteOutlined, RollbackOutlined} from "@ant-design/icons";
 import {eventBus} from "../../util/utils";
 
 
-const fs = window.require('fs');
 const fse = window.require('fs-extra')
 const {Header, Content} = Layout;
 
@@ -38,7 +37,7 @@ class RemoveView extends Component {
     }
 
     empty = () => {
-        this.props.task.jobs.filter(item => item.state === 'remove').forEach(value => {
+        this.props.task.getJobs().filter(item => item.state === 'remove').forEach(value => {
             // 删除下载的文件
             fse.remove(this.props.global.savePath + "/" + value.taskId,function (err) {
                 if (err){
@@ -57,7 +56,7 @@ class RemoveView extends Component {
 
     remove = () => {
         this.props.task.deleteJob(this.state.selectedItem.id);
-        fse.remove(this.props.global.savePath + "/" + this.state.selectedItem.id,function (err) {
+        fse.remove(this.props.global.savePath + "/" + this.state.selectedItem.name.replace(".zip","") + this.state.selectedItem.id + '.zip',function (err) {
             if (err){
                 console.error(err)
                 message.warn('文件删除失败!');
@@ -71,14 +70,14 @@ class RemoveView extends Component {
             return;
         }
         // 删除目录
-        fse.removeSync(this.props.global.savePath + "/" + this.state.selectedItem.id)
+        fse.removeSync(this.props.global.savePath + "/" + this.state.selectedItem.name.replace(".zip","") + this.state.selectedItem.id + '.zip')
         this.props.task.updateStateJob(this.state.selectedItem.id, 'active');
-        eventBus.emit('new-task', this.props.task.selectById(this.state.selectedItem.id))
+        eventBus.emit('new-task', {})
         this.changeMenuState()
     }
 
     changeMenuState = () => {
-        if (this.props.task.jobs.filter(item => item.state === 'remove').length === 0) {
+        if (this.props.task.getJobs().filter(item => item.state === 'remove').length === 0) {
             this.setState({
                 selectedItem: null
             })
@@ -86,17 +85,19 @@ class RemoveView extends Component {
     }
 
     render() {
-        const data = this.props.task.jobs.filter(item => item.state === 'remove')
+        const data = this.props.task.getJobs().filter(item => item.state === 'remove')
 
         return (
             <Layout>
                 <Header className="darg-move-window header-toolbar">
                     <div>
                         <Button size={'small'}
+                                disabled={!this.state.selectedItem}
                                 onClick={this.reDownload}
                                 type={this.state.selectedItem ? "primary" : null}
                                 icon={<RollbackOutlined />}>重新下载</Button>
                         <Button size={'small'}
+                                disabled={!this.state.selectedItem}
                                 style={{marginLeft: 5}}
                                 onClick={this.empty}
                                 danger
