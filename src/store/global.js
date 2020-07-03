@@ -4,9 +4,9 @@ import config from '../util/config'
 
 const os = window.require('os')
 
-configure({
-    enforceActions: 'always'
-});
+// configure({
+//     enforceActions: 'always'
+// });
 
 /**
  * 全局配置

@@ -22,19 +22,20 @@ import {
 } from "../../../util/utils";
 import Bagpipe from "bagpipe";
 import config from '../../../util/config'
+import {toJS} from "mobx";
 
 
 const fs = window.require('fs');
 const fse = window.require('fs-extra');
 const ExcelJS = window.require('exceljs')
 
-@inject('global', "task", 'sysCode')
+@inject('global', "task", 'sysCode','jobProcess')
 @observer
 class PassVehAll extends Component {
 
     state = {
         finishCount: 0,
-        finishSize: 0
+        finishSize: 0,
     }
 
     componentDidMount() {
@@ -152,7 +153,6 @@ class PassVehAll extends Component {
                         //总记录数
                         bagpipe.push(that.readJSONFile, index, totalFiles, data, fileName, filePath, async function (index, itemData) {
                             allData.push(itemData)
-                            console.info("回调一次")
                             if ((index + 1) === totalFiles) {
                                 await that.bulkProcess(data, allData)
                             }
@@ -232,6 +232,7 @@ class PassVehAll extends Component {
         const job = {
             id: taskId, // id
             name: taskName,
+            avatar: '违法/全部',
             url: data.extra.downloadUrl, // 下载地址
             state: this.props.task.getJobs().filter(item => item.state === 'active').length > 0 ? 'waiting' : 'active', // 任务状态, 如果当前有正在下载的任务, 则将任务置为等待中
             process: {
@@ -251,13 +252,9 @@ class PassVehAll extends Component {
         // 添加任务
         this.props.task.addJob(job)
 
-        const activeTask = that.props.task.getJobs().filter(item => item.state === 'active')
+        const activeTask = toJS(this.props.task.getJobs().filter(item => item.state === 'active')[0])
 
-        if (activeTask.length !== 1) {
-            return;
-        }
-
-        console.info("active 任务信息:", job)
+        console.info("active 任务信息:", activeTask)
 
         const bagpipe = new Bagpipe(that.props.global.maxJobs, {});
 
@@ -289,7 +286,12 @@ class PassVehAll extends Component {
 
                                 // 更新状态, 等 1 秒
                                 await waitMoment(1000)
+                                // 保存路径
+                                that.props.task.updateJob(taskId, "localPath",zipFullPath);
                                 that.props.task.updateStateJob(taskId, "complete")
+
+                                // 记录并且重置所使用的状态
+                                that.saveAndReset(taskId)
                             }
                         })
                     })
@@ -361,7 +363,7 @@ class PassVehAll extends Component {
 
                     that.state.finishSize = finishSize;
 
-                    const jobProcess = {
+                    that.props.jobProcess.process = {
                         total: total,
                         finishCount: finishCount,
                         percent: Math.round(finishCount * 100 / total),
@@ -370,18 +372,9 @@ class PassVehAll extends Component {
                         remainingTime: ((new Date().getTime() - startTime) / finishCount) * (total - finishCount) / 1000
                     }
 
-                    // 更新当前任务
-                    that.props.task.updateJob(taskId, "process", jobProcess)
-
 
                     // 如果下载完成
                     if (total === finishCount) {
-                        // 重置 state
-                        that.setState({
-                            finishCount: 0,
-                            finishSize: 0
-                        })
-
                         //全部完成回调
                         callback(true)
                     }
@@ -458,6 +451,7 @@ class PassVehAll extends Component {
      * 创建 Excel
      */
     creatExcel = async (data, path,callback) => {
+        this.props.jobProcess.process.creatingExcel = true;
         const workbook = new ExcelJS.Workbook();
         const sheet = workbook.addWorksheet('Sheet-1');
 
@@ -558,6 +552,17 @@ class PassVehAll extends Component {
 
         await workbook.xlsx.writeFile(path + config.sep + "[过车图片_全部导出].xlsx");
         callback()
+    }
+
+    saveAndReset = (jobId) => {
+        this.props.task.updateJob(jobId,'process',this.props.jobProcess.process);
+
+        this.setState({
+            finishCount: 0,
+            finishSize: 0
+        })
+
+        this.props.jobProcess.process = {}
     }
 
     render() {

@@ -1,8 +1,8 @@
 import {observable, action, configure} from 'mobx';
 import {getStorage,setStorage} from "../util/utils";
-configure({
-    enforceActions: 'always'
-});
+// configure({
+//     enforceActions: 'always'
+// });
 
 /**
  * 字典配置

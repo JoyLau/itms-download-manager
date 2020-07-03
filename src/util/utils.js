@@ -23,7 +23,6 @@ export const statusText = {
     'waiting': '等待中',
     'active': '下载中',
     'complete': '已完成',
-    'remove': '已删除',
     'error': '下载出错'
 };
 
@@ -39,7 +38,7 @@ export function getStorage(key) {
     return val
 }
 
-export function setStorage(key, value) {
+export async function setStorage(key, value) {
     localStorage.setItem(key, JSON.stringify(value))
 }
 
@@ -188,6 +187,11 @@ export function updateNotification(notification,options) {
         description:options.description,
         icon: <LoadingOutlined style={{ color: '#108ee9' }} spin={true}/>,
     });
+}
+
+
+export function fileExists(path) {
+    return fse.pathExistsSync(path)
 }
 
 export function closeNotification(notification,key) {

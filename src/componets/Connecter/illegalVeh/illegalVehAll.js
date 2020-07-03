@@ -1,17 +1,15 @@
 /**
- * 过车导出_选择导出
+ * 违法导出_全部导出
  */
-import React,{Component} from 'react'
+import React, {Component} from 'react'
 import {inject, observer} from "mobx-react";
 import axios from "axios";
-import {message, notification} from "antd";
+import {Button, Divider, message, notification} from "antd";
 import progress from "request-progress";
 import request from "request";
 import {
     eventBus,
     md5Sign,
-    getCodeName,
-    formatDate,
     zip,
     updateNotification,
     closeNotification,
@@ -27,28 +25,47 @@ const ExcelJS = window.require('exceljs')
 
 @inject('global', "task", 'sysCode','jobProcess')
 @observer
-class PassVehSelect extends Component {
+class IllegalVehAll extends Component {
 
     state = {
+        // 当前下载的数量
         finishCount: 0,
+        finishSize: 0,
         job: {
             item: [], // 资源项
             protocolData: {}, // 协议传输数据
-        }
-    }
+        },
+        isDel: false
 
+    }
 
     componentDidMount() {
-        eventBus.on('passVeh-select', this.processSelectData)
+        eventBus.on('illegalVeh-all', this.processAllData)
+        eventBus.on('del-task', () => {
+            this.setState({
+                isDel: true
+            })
+        })
     }
 
-    // 导出选中数据
-    processSelectData = async (data) => {
-        let that = this;
-        console.info("监听到 [过车导出] - [选择任务] ...")
+
+    // 导出全部数据
+    processAllData = (data) => {
+
+        console.info("监听到[过车导出] - [全部任务]...")
 
         data.id = md5Sign(new Date().getTime().toString())
 
+        // 将分页数定义为当前最大记录数
+        data.params.opCondition.pageSize =  data.extra.total
+
+        this.bigDataTips(data, this.goOn, data)
+
+    }
+
+    // 确定继续操作
+    goOn = async (data) => {
+        let that = this;
         updateNotification(notification, {
             key: data.id,
             message: '资源准备中',
@@ -56,85 +73,73 @@ class PassVehSelect extends Component {
         })
 
         try {
-            if (data.extra.sysCode) {
-                updateNotification(notification, {
-                    key: data.id,
-                    message: '资源准备中,请稍等',
-                    description: '正在请求服务器字典数据...',
-                })
-                await this.updateSysCode(data.extra.sysCode)
-            }
-
-
             updateNotification(notification, {
                 key: data.id,
                 message: '资源准备中,请稍等',
-                description: '正在请求选择记录数据...',
+                description: '正在请求记录数据...',
             })
-            // 超时时间按 10000 条 1 分钟的时间来算
-            const timeout = Math.ceil(data.extra.total / 10000) * 60 * 1000;
-            axios({
-                method: data.method,
-                url: data.url,
-                data: data.params.ids,
-                timeout: timeout
+
+            await this.getSearchData(data,async function (items) {
+                await that.addJob(data,items.result.rows)
             })
-                .then(function (response) {
-                    console.log("过车导出选择任务的查询数据返回:", response);
-                    updateNotification(notification, {
-                        key: data.id,
-                        message: '资源准备中,请稍等',
-                        description: '正在添加任务...',
-                    })
-                    that.addJob(data, response.data)
-                })
+
         } catch (e) {
             console.error(e)
             message.error('任务创建失败, 请检查参数及接口是否可用!');
         }
+
+
     }
 
-
-
-    /**
-     * 需要字典表的数据,更新本地字典
-     */
-    updateSysCode = async (data) => {
-        let that = this;
+    getSearchData = async (data,callback) => {
         await axios({
             method: data.method,
             url: data.url,
-            params: {
-                codeTypesString: data.params.codeTypesString
+            data: data.params.opCondition,
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
             },
+            transformRequest: [function (data) {
+                let ret = ''
+                for (let it in data) {
+                    ret += encodeURIComponent(it) + '=' + encodeURIComponent(data[it]) + '&'
+                }
+                return ret
+            }],
         })
             .then(function (response) {
-                Object.keys(response.data).forEach(key => {
-                    that.props.sysCode.updateSysCodes(key, response.data[key])
+                updateNotification(notification, {
+                    key: data.id,
+                    message: '资源准备中,请稍等',
+                    description: '数据读取中...',
                 })
+                callback(response.data)
+            })
+            .catch(function (err) {
+                console.info(err)
+                message.error('任务创建失败, 请检查参数及接口是否可用!');
+                closeNotification(notification,data.id)
             })
     }
 
-    /**
-     * 添加任务
-     */
-    addJob = async (protocolData, resultData) => {
+
+    addJob = async (protocolData, datas) => {
         // 任务名称
-        const taskName = "[过车数据_选择导出]"
+        const taskName = "[违法数据_全部导出]"
             + protocolData.extra.searchData.currentUserName
             + "_"
-            + protocolData.extra.searchData.passTimeStart.split(' ')[0]
+            + protocolData.extra.searchData.startDateTime.split(' ')[0]
             + "_"
-            + protocolData.extra.searchData.passTimeEnd.split(' ')[0]
+            + protocolData.extra.searchData.endDateTime.split(' ')[0]
             + '.zip';
         const job = {
             id: protocolData.id, // id
             name: taskName,
-            avatar: '过车/选择',
+            avatar: '违法/全部',
             url: protocolData.extra.downloadUrl, // 下载地址
             state: this.props.task.getJobs().filter(item => item.state === 'active').length > 0 ? 'waiting' : 'active', // 任务状态, 如果当前有正在下载的任务, 则将任务置为等待中
             process: {
-                total: resultData.length,
+                total: datas.length,
                 finishCount: 0,
                 percent: 0,
                 finishSize: 0,
@@ -146,28 +151,28 @@ class PassVehSelect extends Component {
         //数据存放
         this.setState({
             job: {
-                item: resultData, // 资源项
-                protocolData: protocolData.extra.searchData, // 协议传输数据
-            }
+                item: datas, // 资源项
+                protocolData: protocolData, // 协议传输数据
+            },
+            isDel: false
         })
 
         // 等一会,否则太快看不到提示
-        await waitMoment(2000)
+        await waitMoment(500)
         closeNotification(notification, protocolData.id)
 
         // 添加任务
         this.props.task.addJob(job)
         // 开始处理
         this.process()
-
     }
-
 
     process = () => {
         const activeTask = toJS(this.props.task.getJobs().filter(item => item.state === 'active')[0])
         // 存放的值再赋值进去
         activeTask.item = this.state.job.item;
         activeTask.protocolData = this.state.job.protocolData;
+
         console.info("active 任务信息:", activeTask)
 
         this.downloadTask(activeTask)
@@ -178,12 +183,13 @@ class PassVehSelect extends Component {
         try {
             let task = [];
             activeTask.item.forEach(val => {
-                if (val.image_url_path) {
-                    val.image_url_path.split(";").forEach(url => {
+                // 如果图片地址不存在, 则放一个空图片地址
+                if (val.image) {
+                    val.image.split(";").forEach(url => {
                         task.push({
                             taskId: activeTask.id,
                             taskName: activeTask.name,
-                            plateNum: val.plate_nbr,
+                            plateNum: val.plateNbr,
                             imgUrl: url,
                             downloadUrl: activeTask.url
                         })
@@ -268,15 +274,17 @@ class PassVehSelect extends Component {
                     that.state.finishCount++
 
                     // 当前任务目录文件数
-                    let finishCount = fs.readdirSync(path).filter(value => fs.statSync(path + config.sep + value).size > 0).length
+                    let finishCount = that.state.finishCount
 
-                    // 当前目录大小
-                    let finishSize = 0;
+                    // 本文件大小
+                    const fileSize = fs.statSync(filePath).size;
 
-                    fs.readdirSync(path).forEach(value => {
-                        finishSize = finishSize + fs.statSync(path + config.sep + value).size
-                    })
+                    // 当前任务已下载的文件大小
+                    let finishSize = that.state.finishSize + fileSize;
 
+                    that.state.finishSize = finishSize;
+
+                    // 更新当前任务的进度
                     that.props.jobProcess.process = {
                         total: total,
                         finishCount: finishCount,
@@ -286,9 +294,8 @@ class PassVehSelect extends Component {
                         remainingTime: ((new Date().getTime() - startTime) / finishCount) * (total - finishCount) / 1000
                     }
 
-
                     // 如果下载完成
-                    if (total === that.state.finishCount) {
+                    if (that.state.finishCount === total) {
                         // 生成 excel
                         await that.creatExcel(that.state.job.item, path);
 
@@ -304,7 +311,11 @@ class PassVehSelect extends Component {
                         await waitMoment(1000)
                         // 保存路径
                         that.props.task.updateJob(taskId, "localPath",zipFullPath);
-                        that.props.task.updateStateJob(taskId, "complete")
+                        // 更改状态
+                        that.props.task.updateStateJob(taskId, "complete");
+
+                        // 更新导出状态
+                        that.updateIllegalVehState(that.state.job.protocolData,that.state.job.item);
 
                         // 记录并且重置所使用的状态
                         that.saveAndReset(taskId)
@@ -312,12 +323,52 @@ class PassVehSelect extends Component {
 
                     // 异步回调
                     callback()
+
                 })
                 .pipe(fs.createWriteStream(filePath));
         } catch (e) {
             console.error(e)
             // 更改任务状态为 error
             that.props.task.updateStateJob(taskId, "error")
+        }
+    }
+
+    /**
+     * 大于指定数据的数据量进行提示
+     */
+    bigDataTips = (data, callback, ...args) => {
+        if (data.extra && data.extra.total && data.extra.total >= (data.extra.dataLimit ? data.extra.dataLimit : 10000)) {
+            const key = data.id;
+            const btn = (
+                <div>
+                    <Button size="small"
+                            style={{marginRight: 30}}
+                            onClick={() => {
+                                // 将分页大小改为 10000
+                                args[0].params.opCondition.pageSize = (data.extra.dataLimit ? data.extra.dataLimit : 10000)
+                                callback(...args);
+                            }}>
+                        继续
+                    </Button>
+                    <Button size="small"
+                            type="primary"
+                            onClick={() => {
+                                notification.close(key);
+                                console.info("明智的选择!")
+                            }} style={{marginRight: 30}}>
+                        取消
+                    </Button>
+                </div>
+
+            );
+            notification.warning({
+                message: '警告',
+                description: `当前需要导出的数据量为 ${data.extra.total}, 由于数据库性能所限, 违法导出数据不得大于 ${(data.extra.dataLimit ? data.extra.dataLimit : 10000)} 条, 是否导出前 ${(data.extra.dataLimit ? data.extra.dataLimit : 10000)} 条记录?`,
+                btn,
+                key,
+            });
+        } else {
+            callback(...args);
         }
     }
 
@@ -331,21 +382,17 @@ class PassVehSelect extends Component {
         const sheet = workbook.addWorksheet('Sheet-1');
 
         sheet.columns = [
-            {header: '号牌', key: 'plate_nbr', width: 20},
-            {header: '号牌颜色', key: 'plate_color', width: 20},
-            {header: '点位', key: 'siteName', width: 20},
-            {header: '方向', key: 'direction_name', width: 20},
-            {header: '过车时间', key: 'pass_time', width: 20},
-            {header: '车速', key: 'speed', width: 20},
-            {header: '车道', key: 'lane', width: 20},
-            {header: '车辆类型', key: 'vehicle_type', width: 20},
-            {header: '所属机构', key: 'org_code', width: 20},
-            {header: '设备编号', key: 'device_sys_nbr', width: 20},
-            {header: '车辆品牌', key: 'vehicle_brand', width: 20},
-            {header: '车辆子品牌', key: 'vehicle_sub_brand', width: 20},
-            {header: '车身颜色', key: 'vehicle_color', width: 20},
-            {header: '二次识别', key: 'has_features', width: 20},
-            {header: '过车图片链接', key: 'image_url_path', width: 20},
+            {header: '号牌号码', key: 'plateNbr', width: 20},
+            {header: '号牌种类', key: 'plateType', width: 20},
+            {header: '违法时间', key: 'violationTime', width: 20},
+            {header: '违法地点', key: 'addressDesc', width: 20},
+            {header: '违法类型', key: 'violationType', width: 20},
+            {header: '违法代码', key: 'violationCode', width: 20},
+            {header: '违法行为', key: 'violationDesc', width: 100},
+            {header: '采集机构', key: 'orgCode', width: 20},
+            {header: '证据来源', key: 'violationSource', width: 20},
+            {header: '证据机构', key: 'statusFlag', width: 20},
+            {header: '过车图片链接', key: 'image', width: 20},
         ];
 
         let wrapData = data.map(val => {
@@ -357,16 +404,8 @@ class PassVehSelect extends Component {
             return val;
         })
             .map(item => {
-                // 好牌颜色转换
-                item.plate_color = getCodeName('003', item.plate_color)
-                // 过车时间转换
-                item.pass_time = formatDate(item.pass_time)
-                // 二次识别转化
-                item.has_features = item.has_features === '1' ? "已通过" : '未通过'
-                // 车辆类型转换
-                item.vehicle_type = getCodeName('001', item.vehicle_type)
                 // 过车图片链接转换
-                item.image_url_path = item.plate_nbr + '|' + item.image_url_path
+                item.image = item.plateNbr + '|' + item.image
                 return item;
             })
 
@@ -412,7 +451,7 @@ class PassVehSelect extends Component {
                 }
 
                 // 添加超链接
-                if (rowNumber !== 1 && colNumber === 15) {
+                if (rowNumber !== 1 && colNumber === 11) {
                     const plateNum = cell.value.split('|')[0];
                     const imgName = plateNum + "_" + md5Sign(encodeURIComponent(cell.value.split('|')[1])) + ".jpg"
                     // 适用于图片和 Excel 在同一目录下
@@ -425,7 +464,23 @@ class PassVehSelect extends Component {
             })
         })
 
-        await workbook.xlsx.writeFile(path + config.sep + "[过车图片_选择导出].xlsx");
+        await workbook.xlsx.writeFile(path + config.sep + "[违法图片_选择导出].xlsx");
+    }
+
+    /**
+     * 更新违法数据的导出状态
+     * 结果已经不关心了
+     */
+    updateIllegalVehState = async (protocolData,jobItem) => {
+        try {
+            axios({
+                method: 'POST',
+                url: protocolData.extra.updateExportFlagUrl,
+                data: jobItem.map(val => val.violationId),
+            })
+        } catch (e) {
+            console.error(e)
+        }
     }
 
     saveAndReset = (jobId) => {
@@ -433,6 +488,7 @@ class PassVehSelect extends Component {
 
         this.setState({
             finishCount: 0,
+            finishSize: 0,
             job: {
                 item: [], // 资源项
                 protocolData: {}, // 协议传输数据
@@ -442,7 +498,6 @@ class PassVehSelect extends Component {
         this.props.jobProcess.process = {}
     }
 
-
     render() {
         return (
             <div/>
@@ -451,4 +506,4 @@ class PassVehSelect extends Component {
 
 }
 
-export default PassVehSelect
+export default IllegalVehAll

@@ -5,9 +5,9 @@ import {inject, observer} from "mobx-react";
 
 
 
-@inject('task','global')
+@inject('task','jobProcess')
 @observer
-class ActiveItem extends React.Component {
+class ProcessItem extends React.Component {
 
     render() {
         const styles = {
@@ -42,22 +42,30 @@ class ActiveItem extends React.Component {
                     title={<span>{item.name}</span>}
                     description={
                         <span>
-                            {bytesToSize(item.process.finishSize)}
+                            {bytesToSize(this.props.jobProcess.process.finishSize)}
                             <Divider type="vertical"/>
-                            当前已下载: {item.process.finishCount} / 总计: {item.process.total}
-                        </span>}
+                            当前已下载: {this.props.jobProcess.process.finishCount} / 总计: {this.props.jobProcess.process.total}
+                            {
+                                this.props.jobProcess.process.creatingExcel ?
+                                    <span>
+                                        <Divider type="vertical"/>
+                                        正在生成 Excel ...
+                                    </span>
+                                :
+                                null
+                            }
+                        </span>
+                    }
                 />
                 <div style={content}>
                     <div style={{width: 170}}>
-                        <Progress percent={item.process.percent} showInfo={false} status={item.state === 'error' ? "exception" : 'normal'}/>
+                        <Progress percent={this.props.jobProcess.process.percent} showInfo={false} status={'active'}/>
                         <div style={{display: 'flex', justifyContent: 'space-between'}}>
-                            <span>{item.process.remainingTime !== 0 ? formatTime(item.process.remainingTime) : ''}</span>
-                            <span>{Number(item.process.percent) === 100 ? '100' : item.process.percent}%</span>
+                            <span>{this.props.jobProcess.process.remainingTime !== 0 ? formatTime(this.props.jobProcess.process.remainingTime) : ''}</span>
+                            <span>{Number(this.props.jobProcess.process.percent) === 100 ? '100' : this.props.jobProcess.process.percent}%</span>
                         </div>
                     </div>
-                    {item.state === 'waiting' ? <span style={{color:'orange'}}>等待中</span> : null}
-                    {item.state === 'error' ? <span style={{color:'red'}}>下载出错</span> : null}
-                    {item.state === 'paused' ? <span>暂停中</span> : null}
+                    {item.state === 'active' ? <span>{bytesToSize(this.props.jobProcess.process.speed)}/s</span> : null}
                 </div>
 
             </List.Item>
@@ -65,4 +73,4 @@ class ActiveItem extends React.Component {
     }
 }
 
-export default ActiveItem
+export default ProcessItem

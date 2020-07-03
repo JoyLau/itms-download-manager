@@ -1,10 +1,29 @@
 import React from 'react'
-import {Avatar, Badge, Divider, List, Progress} from 'antd'
-import {getFileExt, bytesToSize,formatTime} from '../../util/utils'
-import {CheckCircleTwoTone, CheckOutlined} from "@ant-design/icons";
+import {Avatar, Badge, Divider, List, Progress,Typography} from 'antd'
+import {bytesToSize,formatTime,fileExists} from '../../util/utils'
+import {CheckCircleTwoTone,WarningOutlined} from "@ant-design/icons";
 
+const fs = window.require('fs');
+const { Text } = Typography;
 
 class CompleteItem extends React.Component {
+
+    renderDesc = (item) => {
+        if (!fileExists(item.localPath)) {
+            return (
+                <Text type="danger"><WarningOutlined /> 文件已被移动或删除</Text>
+            )
+        } else {
+            return (
+                <span>
+                    数据大小: {bytesToSize(fs.statSync(item.localPath).size)}
+                    <Divider type="vertical"/>
+                    下载总数: {item.process.total}
+                </span>
+            )
+        }
+    }
+
 
     render() {
         const styles = {
@@ -21,22 +40,27 @@ class CompleteItem extends React.Component {
             display: 'flex'
         }
 
+        const vehPassStyle = {
+            color: '#f56a00',
+            backgroundColor: '#fde3cf'
+        }
+
+        const illegalPassStyle = {
+            color: '#0276f1',
+            backgroundColor: '#d7d4fa'
+        }
+
         const item = this.props.item;
         return (
             <List.Item style={styles} onClick={() => this.props.onClick()}>
                 <List.Item.Meta
                     avatar={
                         <Badge count={item.isNew ? "New" : null}>
-                            <Avatar size="large">{getFileExt(item.name)}</Avatar>
+                            <Avatar style={item.avatar.indexOf('过车') > -1 ? vehPassStyle : illegalPassStyle } size={48}>{item.avatar}</Avatar>
                         </Badge>
                         }
                     title={<span>{item.name}</span>}
-                    description={
-                        <span>
-                            数据大小: {bytesToSize(item.process.finishSize)}
-                            <Divider type="vertical"/>
-                            下载总数: {item.process.total}
-                        </span>}
+                    description={this.renderDesc(item)}
                 />
                 <div style={content}>
                     <div style={{width: 170}}>
@@ -46,7 +70,7 @@ class CompleteItem extends React.Component {
                             <span>{Number(item.process.percent) === 100 ? '100' : item.process.percent}%</span>
                         </div>
                     </div>
-                    {item.state === 'complete' ? <span style={{color:'#52c41a'}}><CheckCircleTwoTone twoToneColor="#52c41a" />  已完成</span> : null}
+                    <span style={{color:'#52c41a'}}><CheckCircleTwoTone twoToneColor="#52c41a" />  已完成</span>
                 </div>
 
             </List.Item>

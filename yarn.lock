@@ -9043,6 +9043,11 @@ path-type@^4.0.0:
   resolved "https://registry.npm.taobao.org/path-type/download/path-type-4.0.0.tgz#84ed01c0a7ba380afe09d90a8c180dcd9d03043b"
   integrity sha1-hO0BwKe6OAr+CdkKjBgNzZ0DBDs=
 
+pauseable@^0.3.2:
+  version "0.3.2"
+  resolved "https://registry.npm.taobao.org/pauseable/download/pauseable-0.3.2.tgz#43b8d9e39b6af600e3374429854dc6eb49d6f0f9"
+  integrity sha1-Q7jZ45tq9gDjN0QphU3G60nW8Pk=
+
 pbkdf2@^3.0.3:
   version "3.1.1"
   resolved "https://registry.npm.taobao.org/pbkdf2/download/pbkdf2-3.1.1.tgz#cb8724b0fada984596856d1a6ebafd3584654b94"

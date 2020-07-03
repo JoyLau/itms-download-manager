@@ -7,11 +7,12 @@ import {eventBus} from '../../util/utils'
 import {inject, observer} from "mobx-react";
 import {CaretRightOutlined, DeleteOutlined, PauseOutlined} from "@ant-design/icons";
 import ActiveItem from "./activeItem";
+import ProcessItem from "./processItem";
 
 
 const {Header, Content} = Layout;
 
-@inject('task')
+@inject('task','jobProcess')
 @observer
 class ActiveView extends Component {
 
@@ -26,18 +27,29 @@ class ActiveView extends Component {
     }
 
     renderItem(item) {
-        return (
-            <ActiveItem
-                selected={this.state.selectedItem && item.id === this.state.selectedItem.id}
-                onClick={() => this.onItemClick(item)}
-                item={item}
-            />
-        )
+        if (item.state === 'active') {
+            return (
+                <ProcessItem
+                    selected={this.state.selectedItem && item.id === this.state.selectedItem.id}
+                    onClick={() => this.onItemClick(item)}
+                    item={item}
+                />
+            )
+        } else {
+            return (
+                <ActiveItem
+                    selected={this.state.selectedItem && item.id === this.state.selectedItem.id}
+                    onClick={() => this.onItemClick(item)}
+                    item={item}
+                />
+            )
+        }
+
     }
 
 
     changeMenuState = () => {
-        if (this.props.task.getJobs().filter(item => (item.state !== 'complete' && item.state !== 'remove')).length === 0) {
+        if (this.props.task.getJobs().filter(item => (item.state !== 'complete')).length === 0) {
             this.setState({
                 selectedItem: null
             })
@@ -45,34 +57,17 @@ class ActiveView extends Component {
     }
 
     remove = () => {
-        this.props.task.updateStateJob(this.state.selectedItem.id, 'remove');
+        this.props.task.deleteJob(this.state.selectedItem.id);
         this.changeMenuState();
-
     }
 
     start = () => {
         this.props.task.updateStateJob(this.state.selectedItem.id, 'active')
-        eventBus.emit('new-task', {})
-    }
-
-    startAll = () => {
-        this.props.task.getJobs().filter(item => item.state === 'pause' || item.state === 'error').forEach(value => {
-            this.props.task.updateStateJob(value.id, 'active')
-        })
-        eventBus.emit('new-task', {})
-
     }
 
     pause = () => {
         this.props.task.updateStateJob(this.state.selectedItem.id, 'paused')
-        eventBus.emit('new-task', {})
-    }
 
-    pauseAll = () => {
-        this.props.task.getJobs().filter(item => item.state === 'active').forEach(value => {
-            this.props.task.updateStateJob(value.id, 'paused')
-        })
-        eventBus.emit('new-task', {})
     }
 
     render() {
@@ -80,44 +75,46 @@ class ActiveView extends Component {
             <Layout>
                 <Header className="darg-move-window header-toolbar">
                     <div>
-                        <Button size={'small'} onClick={this.startAll}
-                                icon={<CaretRightOutlined/>}>全部开始</Button>
-                        <Button size={'small'} onClick={this.pauseAll} icon={<PauseOutlined/>}
-                                style={{marginLeft: 5}}>全部暂停</Button>
-                        <Divider type="vertical"/>
                         {
                             this.state.selectedItem && (this.state.selectedItem.state === 'paused' || this.state.selectedItem.state === 'error') ?
                                 <Button onClick={this.start}
-                                        disabled={!this.state.selectedItem}
+                                        // disabled={!this.state.selectedItem}
+                                        disabled
                                         size={'small'} icon={<CaretRightOutlined/>}/> :
                                 <Button onClick={this.pause}
-                                        disabled={!this.state.selectedItem}
+                                        // disabled={!this.state.selectedItem}
+                                        disabled
                                         size={'small'} type="dashed" icon={<PauseOutlined/>}/>
                         }
-
+                        <Divider type="vertical"/>
                         {
-                            this.state.selectedItem ?
-                                <Popconfirm title="你确定要删除这个下载任务吗?"
-                                            onConfirm={this.remove}
-                                            okText="删除"
-                                            cancelText="取消">
-                                    <Button disabled={!this.state.selectedItem}
-                                            size={'small'} style={{marginLeft: 10}}
-                                            type="danger"><DeleteOutlined/></Button>
-                                </Popconfirm>
-                                :
+                            // this.state.selectedItem ?
+                            //     <Popconfirm title="你确定要删除这个下载任务吗?"
+                            //                 onConfirm={this.remove}
+                            //                 okText="删除"
+                            //                 cancelText="取消">
+                            //         <Button disabled={!this.state.selectedItem}
+                            //                 size={'small'}
+                            //                 type="danger">
+                            //             <DeleteOutlined/>
+                            //         </Button>
+                            //     </Popconfirm>
+                            //     :
                                 <Button disabled={true}
-                                        size={'small'} style={{marginLeft: 10}} type="danger"><DeleteOutlined/></Button>
+                                        size={'small'}
+                                        type="danger">
+                                    <DeleteOutlined/>
+                                </Button>
                         }
                     </div>
                     <WindowControl/>
                 </Header>
                 <Content>
                     {
-                        this.props.task.getJobs().filter(item => (item.state !== 'complete' && item.state !== 'remove')).length > 0 ?
+                        this.props.task.getJobs().filter(item => (item.state !== 'complete')).length > 0 ?
                             <List
                                 itemLayout="horizontal"
-                                dataSource={this.props.task.getJobs().filter(item => (item.state !== 'complete' && item.state !== 'remove'))}
+                                dataSource={this.props.task.getJobs().filter(item => item.state !== 'complete')}
                                 renderItem={item => this.renderItem(item)}/>
                             :
                             <EmptyContent textType={'active'}/>

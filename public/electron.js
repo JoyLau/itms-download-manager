@@ -12,10 +12,10 @@ const PROTOCOL = "itms-download-manager"
 // 创建浏览器窗口
 function createWindow() {
     win = new BrowserWindow({
-        width: 900,
+        width: 960,
         height: 600,
-        minWidth: 900,
-        minHeight: 600,
+        minWidth: 800,
+        minHeight: 400,
         center: true,
         titleBarStyle: 'hiddenInset',
         show: false,

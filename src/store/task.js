@@ -1,9 +1,9 @@
 import {observable, action, configure,autorun,reaction, toJS} from 'mobx';
 import {getStorage, setStorage} from "../util/utils";
 
-configure({
-    enforceActions: 'always'
-});
+// configure({
+//     enforceActions: 'always'
+// });
 /**
  * 任务进度配置
  */
@@ -18,8 +18,16 @@ class Task {
     jobs = []
 
     change = autorun(
-        () => {}
+        () => {
+            console.info("autorun")
+        }
     )
+
+    saveJobs() {
+        setStorage("jobs",this.jobs).then(()=>{
+            console.info("jobs 保存完成!")
+        })
+    }
 
     @action
     initJobs() {
@@ -29,7 +37,8 @@ class Task {
     }
 
     getJobs(){
-        return toJS(this.jobs)
+        console.info("getJobs",new Date().toLocaleTimeString())
+        return this.jobs
     }
 
     selectById(jobId){
@@ -42,36 +51,31 @@ class Task {
 
     @action
     addJob(job) {
-        this.jobs = this.jobs.concat(job)
-        // setStorage("jobs", this.jobs)
+        //根据状态决定前面插入还是后面插入
+        job.state === 'active' ? this.jobs.unshift(job) : this.jobs.push(job)
+        this.saveJobs()
     }
 
     @action
     updateStateJob(jobId, state) {
-        this.jobs = this.jobs.map(value => {
-            if (value.id === jobId) {
-                value.state = state
-            }
-            return value;
-        })
-        // setStorage("jobs",this.jobs)
+        this.updateJob(jobId,'state',state);
     }
 
     @action
     updateJob(jobId, key, obj) {
-        this.jobs = this.jobs.map(value => {
-            if (value.id === jobId) {
-                value[key] = obj
-            }
-            return value;
-        })
-        // setStorage("jobs",this.jobs)
+        this.jobs[this.jobs.findIndex(job => job.id === jobId)][key] = obj
+        this.saveJobs()
     }
 
     @action
     deleteJob(jobId) {
-        this.jobs = this.jobs.filter(value => value.id !== jobId)
-        // setStorage("jobs", this.jobs)
+        const index = this.jobs.findIndex(job => job.id === jobId);
+        // 如果下标不存在则会删除最后一个元素, 这里要判断下
+        if (index > -1) {
+            this.jobs.splice(index, 1);
+            this.saveJobs()
+        }
+
     }
 }
 
