@@ -85,7 +85,6 @@
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-scripts": "3.4.1",
-    "request": "^2.88.2",
     "request-progress": "^3.0.0",
     "semver": "^7.3.2"
   },
@@ -94,7 +93,8 @@
     "exceljs": "^4.1.0",
     "fs-extra": "^9.0.1",
     "readdirp": "^3.4.0",
-    "wrench": "^1.5.9"
+    "wrench": "^1.5.9",
+    "request": "^2.88.2"
   },
   "scripts": {
     "eletron-start": "electron .",

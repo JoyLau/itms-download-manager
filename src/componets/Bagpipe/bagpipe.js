@@ -168,4 +168,4 @@ class Bagpipe extends EventEmitter {
   }
 }
 
-module.exports = Bagpipe;
+export default Bagpipe;

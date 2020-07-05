@@ -102,14 +102,14 @@ class Version extends Component {
                     that.setState({
                         percent: 100,
                     })
-                    console.info("end", savePath)
+                    console.info("download end")
 
                     if (device.macOS) {
                         shell.showItemInFolder(savePath)
                     }
 
                     if (device.windows) {
-                        shell.openItem(savePath);
+                        shell.showItemInFolder(savePath);
                     }
 
                     setTimeout(function () {
