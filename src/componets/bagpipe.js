@@ -29,7 +29,8 @@ var Bagpipe = function (limit, options) {
     disabled: false,
     refuse: false,
     ratio: 1,
-    timeout: null
+    timeout: null,
+    pause: false,
   };
   if (typeof options === 'boolean') {
     options = {
@@ -88,7 +89,7 @@ Bagpipe.prototype.push = function (method) {
  */
 Bagpipe.prototype.next = function () {
   var that = this;
-  if (that.active < that.limit && that.queue.length) {
+  if (that.active < that.limit && that.queue.length && !that.options.pause) {
     var req = that.queue.shift();
     that.run(req.method, req.args);
   }
@@ -147,5 +148,24 @@ Bagpipe.prototype.run = function (method, args) {
   }
   method.apply(null, args);
 };
+
+Bagpipe.prototype.stop = function (method, args) {
+  console.info("start stop")
+  this.queue = []
+
+}
+
+Bagpipe.prototype.pause = function (method, args) {
+  console.info("start pause")
+  this.options.pause = true
+
+}
+
+Bagpipe.prototype.resume = function (method, args) {
+  console.info("start resume")
+  this.options.pause = false
+  this.next()
+
+}
 
 module.exports = Bagpipe;
