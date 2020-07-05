@@ -19,6 +19,10 @@
 
 !macroend
 
+!macro customUnInstall
+        DeleteRegKey HKCR "itms-download-manager"
+!macroend
+
 !macro customInstallMode
   # set $isForceMachineInstall or $isForceCurrentInstall
   # to enforce one or the other modes.

@@ -37,7 +37,6 @@ class Task {
     }
 
     getJobs(){
-        console.info("getJobs",new Date().toLocaleTimeString())
         return this.jobs
     }
 

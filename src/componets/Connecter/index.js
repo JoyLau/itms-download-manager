@@ -87,9 +87,14 @@ class Connecter extends React.Component {
 
     // 协议数据处理
     handleArg = arg => {
+        console.info("arg 原始数据为:",arg)
         let argStr;
         if (Array.isArray(arg)) {
             argStr = arg[arg.length - 1].replace(config.PROTOCOL + "://", "");
+            // windows 下最后一项会带上 "/"
+            if (argStr.charAt(argStr.length-1) === '/') {
+                argStr = argStr.substring(0,argStr.length -1)
+            }
         } else {
             argStr = arg.replace(config.PROTOCOL + "://", "");
         }

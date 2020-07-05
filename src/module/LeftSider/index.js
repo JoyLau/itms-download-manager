@@ -3,6 +3,7 @@ import {Avatar, Menu, Layout, Badge} from 'antd'
 import {DownloadOutlined,CheckOutlined,SettingOutlined} from'@ant-design/icons';
 import avatarImg from './avatar.png'
 import {inject, observer} from "mobx-react";
+import Version from "../../componets/Version";
 
 const {Sider} = Layout;
 const os = window.require('os')
@@ -43,6 +44,7 @@ class LeftSider extends React.Component {
                         <span>设置</span>
                     </Menu.Item>
                 </Menu>
+                <Version/>
             </Sider>
         )
     }
