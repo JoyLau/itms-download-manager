@@ -15,7 +15,7 @@ import {
     closeNotification,
     waitMoment,
 } from "../../../util/utils";
-import Bagpipe from "bagpipe";
+import Bagpipe from "../../Bagpipe/bagpipe";
 import config from '../../../util/config'
 import {toJS} from "mobx";
 
@@ -34,18 +34,20 @@ class IllegalVehAll extends Component {
         job: {
             item: [], // 资源项
             protocolData: {}, // 协议传输数据
-        },
-        isDel: false
+        }
 
     }
 
+    downloadBagpipe = new Bagpipe(this.props.global.maxJobs, {});
+
     componentDidMount() {
         eventBus.on('illegalVeh-all', this.processAllData)
-        eventBus.on('del-task', () => {
-            this.setState({
-                isDel: true
-            })
-        })
+
+        eventBus.on('pause', () => this.downloadBagpipe.pause())
+
+        eventBus.on('resume', () => this.downloadBagpipe.resume())
+
+        eventBus.on('stop', () => this.downloadBagpipe.stop())
     }
 
 
@@ -132,19 +134,23 @@ class IllegalVehAll extends Component {
             + "_"
             + protocolData.extra.searchData.endDateTime.split(' ')[0]
             + '.zip';
+        const process = {
+            total: datas.length,
+            finishCount: 0,
+            percent: 0,
+            finishSize: 0,
+            remainingTime: ''
+        }
+
+        this.props.jobProcess.process = process;
+
         const job = {
             id: protocolData.id, // id
             name: taskName,
             avatar: '违法/全部',
             url: protocolData.extra.downloadUrl, // 下载地址
             state: this.props.task.getJobs().filter(item => item.state === 'active').length > 0 ? 'waiting' : 'active', // 任务状态, 如果当前有正在下载的任务, 则将任务置为等待中
-            process: {
-                total: datas.length,
-                finishCount: 0,
-                percent: 0,
-                finishSize: 0,
-                remainingTime: ''
-            },
+            process: process,
             isNew: true,
         }
 
@@ -153,8 +159,7 @@ class IllegalVehAll extends Component {
             job: {
                 item: datas, // 资源项
                 protocolData: protocolData, // 协议传输数据
-            },
-            isDel: false
+            }
         })
 
         // 等一会,否则太快看不到提示
@@ -211,11 +216,9 @@ class IllegalVehAll extends Component {
                 return;
             }
 
-            const bagpipe = new Bagpipe(this.props.global.maxJobs, {});
-
             const nowTime = new Date().getTime();
             task.forEach((item, index) => {
-                bagpipe.push(that.download, index, item, task.length, nowTime, function () {
+                this.downloadBagpipe.push(that.download, index, item, task.length, nowTime, function () {
                 });
             })
         } catch (e) {

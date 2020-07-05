@@ -59,7 +59,10 @@ class ProcessItem extends React.Component {
                 />
                 <div style={content}>
                     <div style={{width: 170}}>
-                        <Progress percent={this.props.jobProcess.process.percent} showInfo={false} status={'active'}/>
+                        <Progress percent={this.props.jobProcess.process.percent} showInfo={false} strokeColor={{
+                            '0%': '#108ee9',
+                            '100%': '#87d068',
+                        }}/>
                         <div style={{display: 'flex', justifyContent: 'space-between'}}>
                             <span>{this.props.jobProcess.process.remainingTime !== 0 ? formatTime(this.props.jobProcess.process.remainingTime) : ''}</span>
                             <span>{Number(this.props.jobProcess.process.percent) === 100 ? '100' : this.props.jobProcess.process.percent}%</span>

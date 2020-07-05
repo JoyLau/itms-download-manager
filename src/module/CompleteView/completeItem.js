@@ -8,8 +8,8 @@ const { Text } = Typography;
 
 class CompleteItem extends React.Component {
 
-    renderDesc = (item) => {
-        if (!fileExists(item.localPath)) {
+    renderDesc = (exists,item) => {
+        if (!exists) {
             return (
                 <Text type="danger"><WarningOutlined /> 文件已被移动或删除</Text>
             )
@@ -51,6 +51,9 @@ class CompleteItem extends React.Component {
         }
 
         const item = this.props.item;
+        //文件是否存在
+        const exists = fileExists(item.localPath);
+
         return (
             <List.Item style={styles} onClick={() => this.props.onClick()}>
                 <List.Item.Meta
@@ -59,8 +62,8 @@ class CompleteItem extends React.Component {
                             <Avatar style={item.avatar.indexOf('过车') > -1 ? vehPassStyle : illegalPassStyle } size={48}>{item.avatar}</Avatar>
                         </Badge>
                         }
-                    title={<span>{item.name}</span>}
-                    description={this.renderDesc(item)}
+                    title={<Text delete = {!exists}>{item.name}</Text>}
+                    description={this.renderDesc(exists,item)}
                 />
                 <div style={content}>
                     <div style={{width: 170}}>

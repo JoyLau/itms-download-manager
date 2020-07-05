@@ -14,7 +14,7 @@ import {
     closeNotification,
     waitMoment,
 } from "../../../util/utils";
-import Bagpipe from "bagpipe";
+import Bagpipe from "../../Bagpipe/bagpipe";
 import config from '../../../util/config'
 import axios from "axios";
 import {toJS} from "mobx";
@@ -35,8 +35,16 @@ class IllegalVehSelect extends Component {
         }
     }
 
+    downloadBagpipe = new Bagpipe(this.props.global.maxJobs, {});
+
     componentDidMount() {
         eventBus.on('illegalVeh-select', this.processSelectData)
+
+        eventBus.on('pause', () => this.downloadBagpipe.pause())
+
+        eventBus.on('resume', () => this.downloadBagpipe.resume())
+
+        eventBus.on('stop', () => this.downloadBagpipe.stop())
     }
 
 
@@ -77,19 +85,24 @@ class IllegalVehSelect extends Component {
             + "_"
             + protocolData.extra.searchData.endDateTime.split(' ')[0]
             + '.zip';
+
+        const process = {
+            total: protocolData.data.length,
+            finishCount: 0,
+            percent: 0,
+            finishSize: 0,
+            remainingTime: ''
+        }
+
+        this.props.jobProcess.process = process;
+
         const job = {
             id: protocolData.id, // id
             name: taskName,
             avatar: '违法/选择',
             url: protocolData.extra.downloadUrl, // 下载地址
             state: this.props.task.getJobs().filter(item => item.state === 'active').length > 0 ? 'waiting' : 'active', // 任务状态, 如果当前有正在下载的任务, 则将任务置为等待中
-            process: {
-                total: protocolData.data.length,
-                finishCount: 0,
-                percent: 0,
-                finishSize: 0,
-                remainingTime: ''
-            },
+            process: process,
             isNew: true,
         }
 
@@ -156,11 +169,9 @@ class IllegalVehSelect extends Component {
                 return;
             }
 
-            const bagpipe = new Bagpipe(this.props.global.maxJobs, {});
-
             const nowTime = new Date().getTime();
             task.forEach((item, index) => {
-                bagpipe.push(that.download, index, item, task.length, nowTime, function () {
+                this.downloadBagpipe.push(that.download, index, item, task.length, nowTime, function () {
                 });
             })
         } catch (e) {

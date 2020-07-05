@@ -77,7 +77,18 @@ class Connecter extends React.Component {
                 }
             }
             // 发送通知
-            eventBus.emit(data.extra.name + '-' + data.extra.type, data)
+            // 如果当前没有正在运行的任务,则新建任务
+            if (this.props.task.getJobs().filter(job => job.state === 'active').length > 0) {
+                message.warning('当前任务正在下载中,请稍后再试.');
+            } else {
+                eventBus.emit(data.extra.name + '-' + data.extra.type, data)
+            }
+
+
+            // 发送更新软件通知
+            if (data.update) {
+                eventBus.emit('update-soft', data.update)
+            }
         } catch (e) {
             console.error(e)
             message.error('任务创建失败, 请检查传输参数格式!');

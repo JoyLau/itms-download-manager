@@ -20,7 +20,7 @@ import {
     formatTime, unzip,
     metaDB,
 } from "../../../util/utils";
-import Bagpipe from "bagpipe";
+import Bagpipe from "../../Bagpipe/bagpipe";
 import config from '../../../util/config'
 import {toJS} from "mobx";
 
@@ -38,8 +38,16 @@ class PassVehAll extends Component {
         finishSize: 0,
     }
 
+    downloadBagpipe = new Bagpipe(this.props.global.maxJobs, {});
+
     componentDidMount() {
         eventBus.on('passVeh-all', this.processAllData)
+
+        eventBus.on('pause', () => this.downloadBagpipe.pause())
+
+        eventBus.on('resume', () => this.downloadBagpipe.resume())
+
+        eventBus.on('stop', () => this.downloadBagpipe.stop())
     }
 
 
@@ -229,19 +237,24 @@ class PassVehAll extends Component {
             + "_"
             + data.extra.searchData.passTimeEnd.split(' ')[0]
             + '.zip';
+
+        const process = {
+            total: total,
+            finishCount: 0,
+            percent: 0,
+            finishSize: 0,
+            remainingTime: ''
+        };
+
+        this.props.jobProcess.process = process;
+
         const job = {
             id: taskId, // id
             name: taskName,
             avatar: '违法/全部',
             url: data.extra.downloadUrl, // 下载地址
             state: this.props.task.getJobs().filter(item => item.state === 'active').length > 0 ? 'waiting' : 'active', // 任务状态, 如果当前有正在下载的任务, 则将任务置为等待中
-            process: {
-                total: total,
-                finishCount: 0,
-                percent: 0,
-                finishSize: 0,
-                remainingTime: ''
-            },
+            process: process,
             isNew: true,
         }
 
@@ -256,11 +269,9 @@ class PassVehAll extends Component {
 
         console.info("active 任务信息:", activeTask)
 
-        const bagpipe = new Bagpipe(that.props.global.maxJobs, {});
-
         const nowTime = new Date().getTime();
         totalData.forEach(item => {
-            bagpipe.push(that.allDownload, nowTime, job, item, total, async function (finish) {
+            this.downloadBagpipe.push(that.allDownload, nowTime, job, item, total, async function (finish) {
                 // 如果全部完成了
                 if (finish) {
                     const bg = new Bagpipe(1, {});

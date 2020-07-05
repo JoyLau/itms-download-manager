@@ -17,7 +17,7 @@ import {
     closeNotification,
     waitMoment,
 } from "../../../util/utils";
-import Bagpipe from "bagpipe";
+import Bagpipe from "../../Bagpipe/bagpipe";
 import config from '../../../util/config'
 import {toJS} from "mobx";
 
@@ -37,9 +37,16 @@ class PassVehSelect extends Component {
         }
     }
 
+    downloadBagpipe = new Bagpipe(this.props.global.maxJobs, {});
 
     componentDidMount() {
         eventBus.on('passVeh-select', this.processSelectData)
+
+        eventBus.on('pause', () => this.downloadBagpipe.pause())
+
+        eventBus.on('resume', () => this.downloadBagpipe.resume())
+
+        eventBus.on('stop', () => this.downloadBagpipe.stop())
     }
 
     // 导出选中数据
@@ -127,19 +134,24 @@ class PassVehSelect extends Component {
             + "_"
             + protocolData.extra.searchData.passTimeEnd.split(' ')[0]
             + '.zip';
+
+        const process = {
+            total: resultData.length,
+            finishCount: 0,
+            percent: 0,
+            finishSize: 0,
+            remainingTime: ''
+        }
+
+        this.props.jobProcess.process = process;
+
         const job = {
             id: protocolData.id, // id
             name: taskName,
             avatar: '过车/选择',
             url: protocolData.extra.downloadUrl, // 下载地址
             state: this.props.task.getJobs().filter(item => item.state === 'active').length > 0 ? 'waiting' : 'active', // 任务状态, 如果当前有正在下载的任务, 则将任务置为等待中
-            process: {
-                total: resultData.length,
-                finishCount: 0,
-                percent: 0,
-                finishSize: 0,
-                remainingTime: ''
-            },
+            process: process,
             isNew: true,
         }
 
@@ -205,11 +217,9 @@ class PassVehSelect extends Component {
                 return;
             }
 
-            const bagpipe = new Bagpipe(this.props.global.maxJobs, {});
-
             const nowTime = new Date().getTime();
             task.forEach((item, index) => {
-                bagpipe.push(that.download, index, item, task.length, nowTime, function () {
+                this.downloadBagpipe.push(that.download, index, item, task.length, nowTime, function () {
                 });
             })
         } catch (e) {
