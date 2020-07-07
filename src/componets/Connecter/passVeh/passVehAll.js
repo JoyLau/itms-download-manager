@@ -18,7 +18,7 @@ import {
     waitMoment,
     bytesToSize,
     formatTime, unzip,
-    metaDB,
+    formatDate_,
 } from "../../../util/utils";
 import Bagpipe from "../../Bagpipe/bagpipe";
 import config from '../../../util/config'
@@ -47,7 +47,10 @@ class PassVehAll extends Component {
 
         eventBus.on('resume', () => this.downloadBagpipe.resume())
 
-        eventBus.on('stop', () => this.downloadBagpipe.stop())
+        eventBus.on('stop', (info) => {
+            this.downloadBagpipe.stop()
+            this.saveAndReset(info.taskId);
+        })
     }
 
 
@@ -233,9 +236,7 @@ class PassVehAll extends Component {
         const taskName = "[过车数据_全部导出]"
             + data.extra.searchData.currentUserName
             + "_"
-            + data.extra.searchData.passTimeStart.split(' ')[0]
-            + "_"
-            + data.extra.searchData.passTimeEnd.split(' ')[0]
+            + formatDate_(new Date().getTime())
             + '.zip';
 
         const process = {
@@ -274,6 +275,9 @@ class PassVehAll extends Component {
             this.downloadBagpipe.push(that.allDownload, nowTime, job, item, total, async function (finish) {
                 // 如果全部完成了
                 if (finish) {
+                    // 删除 metaData 临时文件目录
+                    fse.removeSync(that.props.global.savePath + config.sep + taskId + config.sep + "metaData");
+
                     const bg = new Bagpipe(1, {});
 
                     const rootPath = that.props.global.savePath + config.sep + taskId;
@@ -289,7 +293,7 @@ class PassVehAll extends Component {
                             // 所有 excel 都生成完毕
                             if (index + 1 === allData.length){
                                 // 生成压缩包
-                                const zipFullPath = that.props.global.savePath + config.sep + taskName.replace(".zip", "") + taskId + '.zip';
+                                const zipFullPath = that.props.global.savePath + config.sep + taskName.replace(".zip", "") + '.zip';
                                 await zip(rootPath, zipFullPath, true)
 
                                 // 播放下载完成提示音和通知
@@ -326,7 +330,7 @@ class PassVehAll extends Component {
             fse.mkdirpSync(parentPath);
 
             const imageUrl = item.image_url_path ? item.image_url_path.split(";")[0] : "";
-            const fileName = item.plate_nbr + "_" + md5Sign(encodeURIComponent(imageUrl)) + ".jpg";
+            const fileName = item.plate_nbr + "_" + item.device_nbr + "_" + item.snap_nbr + ".jpg";
 
             const fileFullPath = parentPath + config.sep + fileName;
 
@@ -502,7 +506,7 @@ class PassVehAll extends Component {
                 // 车辆类型转换
                 item.vehicle_type = getCodeName('001', item.vehicle_type)
                 // 过车图片链接转换
-                item.image_url_path = item.plate_nbr + '|' + item.image_url_path
+                item.image_url_path = item.plate_nbr + '|' + item.device_nbr + '|' + item.snap_nbr
                 return item;
             })
 
@@ -550,7 +554,9 @@ class PassVehAll extends Component {
                 // 添加超链接
                 if (rowNumber !== 1 && colNumber === 15) {
                     const plateNum = cell.value.split('|')[0];
-                    const imgName = plateNum + "_" + md5Sign(encodeURIComponent(cell.value.split('|')[1])) + ".jpg"
+                    const device_nbr = cell.value.split('|')[1];
+                    const snap_nbr = cell.value.split('|')[2];
+                    const imgName = plateNum + "_" + device_nbr + '_' + snap_nbr + ".jpg"
                     // 适用于图片和 Excel 在同一目录下
                     cell.value = {
                         text: "点击打开:" + plateNum + ".jpg",

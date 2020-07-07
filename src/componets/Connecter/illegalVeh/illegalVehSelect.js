@@ -12,7 +12,7 @@ import {
     zip,
     updateNotification,
     closeNotification,
-    waitMoment,
+    waitMoment, formatDate_,
 } from "../../../util/utils";
 import Bagpipe from "../../Bagpipe/bagpipe";
 import config from '../../../util/config'
@@ -44,7 +44,10 @@ class IllegalVehSelect extends Component {
 
         eventBus.on('resume', () => this.downloadBagpipe.resume())
 
-        eventBus.on('stop', () => this.downloadBagpipe.stop())
+        eventBus.on('stop', (info) => {
+            this.downloadBagpipe.stop()
+            this.saveAndReset(info.taskId);
+        })
     }
 
 
@@ -81,9 +84,7 @@ class IllegalVehSelect extends Component {
         const taskName = "[违法数据_选择导出]"
             + protocolData.extra.searchData.currentUserName
             + "_"
-            + protocolData.extra.searchData.startDateTime.split(' ')[0]
-            + "_"
-            + protocolData.extra.searchData.endDateTime.split(' ')[0]
+            + formatDate_(new Date().getTime())
             + '.zip';
 
         const process = {
@@ -149,7 +150,9 @@ class IllegalVehSelect extends Component {
                             taskName: activeTask.name,
                             plateNum: val.plateNbr,
                             imgUrl: url,
-                            downloadUrl: activeTask.url
+                            downloadUrl: activeTask.url,
+                            deviceSysNbr: val.deviceSysNbr, // 设备编号
+                            snapNbr: val.snapNbr // 抓拍编号
                         })
                     })
                 } else {
@@ -158,7 +161,9 @@ class IllegalVehSelect extends Component {
                         taskName: activeTask.name,
                         plateNum: val.plateNbr,
                         imgUrl: 'blank_image_url',
-                        downloadUrl: activeTask.url
+                        downloadUrl: activeTask.url,
+                        deviceSysNbr: val.deviceSysNbr, // 设备编号
+                        snapNbr: val.snapNbr // 抓拍编号
                     })
                 }
             })
@@ -189,7 +194,7 @@ class IllegalVehSelect extends Component {
         try { // 文件目录不存在则创建目录
             const path = this.props.global.savePath + config.sep + taskId;
 
-            const fileName = item.plateNum + "_" + md5Sign(encodeURIComponent(item.imgUrl)) + ".jpg";
+            const fileName = item.plateNum + "_" + item.deviceSysNbr + "_" + item.snapNbr + ".jpg";
             const filePath = path + config.sep + fileName;
 
             if (!fs.existsSync(path)) {
@@ -256,7 +261,7 @@ class IllegalVehSelect extends Component {
                         await that.creatExcel(that.state.job.item, path);
 
                         // 生成压缩包
-                        const zipFullPath = that.props.global.savePath + config.sep + taskName.replace(".zip", "") + taskId + '.zip';
+                        const zipFullPath = that.props.global.savePath + config.sep + taskName.replace(".zip", "") + '.zip';
                         await zip(path, zipFullPath, true)
 
 
@@ -320,7 +325,7 @@ class IllegalVehSelect extends Component {
         })
             .map(item => {
             // 过车图片链接转换
-            item.image = item.plateNbr + '|' + item.image
+            item.image = item.plateNbr + '|' + item.deviceSysNbr + '|' + item.snapNbr
             return item;
         })
 
@@ -368,7 +373,9 @@ class IllegalVehSelect extends Component {
                 // 添加超链接
                 if (rowNumber !== 1 && colNumber === 11) {
                     const plateNum = cell.value.split('|')[0];
-                    const imgName = plateNum + "_" + md5Sign(encodeURIComponent(cell.value.split('|')[1])) + ".jpg"
+                    const device_nbr = cell.value.split('|')[1];
+                    const snap_nbr = cell.value.split('|')[2];
+                    const imgName = plateNum + "_" + device_nbr + '_' + snap_nbr + ".jpg"
                     // 适用于图片和 Excel 在同一目录下
                     cell.value = {
                         text: "点击打开:" + plateNum + ".jpg",

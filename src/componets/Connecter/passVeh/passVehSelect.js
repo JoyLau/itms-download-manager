@@ -16,6 +16,7 @@ import {
     updateNotification,
     closeNotification,
     waitMoment,
+    formatDate_,
 } from "../../../util/utils";
 import Bagpipe from "../../Bagpipe/bagpipe";
 import config from '../../../util/config'
@@ -46,7 +47,10 @@ class PassVehSelect extends Component {
 
         eventBus.on('resume', () => this.downloadBagpipe.resume())
 
-        eventBus.on('stop', () => this.downloadBagpipe.stop())
+        eventBus.on('stop', (info) => {
+            this.downloadBagpipe.stop()
+            this.saveAndReset(info.taskId);
+        })
     }
 
     // 导出选中数据
@@ -130,9 +134,7 @@ class PassVehSelect extends Component {
         const taskName = "[过车数据_选择导出]"
             + protocolData.extra.searchData.currentUserName
             + "_"
-            + protocolData.extra.searchData.passTimeStart.split(' ')[0]
-            + "_"
-            + protocolData.extra.searchData.passTimeEnd.split(' ')[0]
+            + formatDate_(new Date().getTime())
             + '.zip';
 
         const process = {
@@ -197,7 +199,9 @@ class PassVehSelect extends Component {
                             taskName: activeTask.name,
                             plateNum: val.plate_nbr,
                             imgUrl: url,
-                            downloadUrl: activeTask.url
+                            downloadUrl: activeTask.url,
+                            device_nbr: val.device_nbr, // 设备编号
+                            snap_nbr: val.snap_nbr, // 抓拍编号
                         })
                     })
                 } else {
@@ -206,7 +210,9 @@ class PassVehSelect extends Component {
                         taskName: activeTask.name,
                         plateNum: val.plateNbr,
                         imgUrl: 'blank_image_url',
-                        downloadUrl: activeTask.url
+                        downloadUrl: activeTask.url,
+                        device_nbr: val.device_nbr, // 设备编号
+                        snap_nbr: val.snap_nbr, // 抓拍编号
                     })
                 }
             })
@@ -237,7 +243,7 @@ class PassVehSelect extends Component {
         try { // 文件目录不存在则创建目录
             const path = this.props.global.savePath + config.sep + taskId;
 
-            const fileName = item.plateNum + "_" + md5Sign(encodeURIComponent(item.imgUrl)) + ".jpg";
+            const fileName = item.plateNum + "_" + item.device_nbr + "_" + item.snap_nbr + ".jpg";
             const filePath = path + config.sep + fileName;
 
             if (!fs.existsSync(path)) {
@@ -303,7 +309,7 @@ class PassVehSelect extends Component {
                         await that.creatExcel(that.state.job.item, path);
 
                         // 生成压缩包
-                        const zipFullPath = that.props.global.savePath + config.sep + taskName.replace(".zip", "") + taskId + '.zip';
+                        const zipFullPath = that.props.global.savePath + config.sep + taskName.replace(".zip", "") + '.zip';
                         await zip(path, zipFullPath, true)
 
 
@@ -376,7 +382,7 @@ class PassVehSelect extends Component {
                 // 车辆类型转换
                 item.vehicle_type = getCodeName('001', item.vehicle_type)
                 // 过车图片链接转换
-                item.image_url_path = item.plate_nbr + '|' + item.image_url_path
+                item.image_url_path = item.plate_nbr + '|' + item.device_nbr + '|' + item.snap_nbr
                 return item;
             })
 
@@ -424,7 +430,9 @@ class PassVehSelect extends Component {
                 // 添加超链接
                 if (rowNumber !== 1 && colNumber === 15) {
                     const plateNum = cell.value.split('|')[0];
-                    const imgName = plateNum + "_" + md5Sign(encodeURIComponent(cell.value.split('|')[1])) + ".jpg"
+                    const device_nbr = cell.value.split('|')[1];
+                    const snap_nbr = cell.value.split('|')[2];
+                    const imgName = plateNum + "_" + device_nbr + '_' + snap_nbr + ".jpg"
                     // 适用于图片和 Excel 在同一目录下
                     cell.value = {
                         text: "点击打开:" + plateNum + ".jpg",

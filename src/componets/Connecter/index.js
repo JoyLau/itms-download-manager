@@ -19,6 +19,18 @@ class Connecter extends React.Component {
         ipcRenderer.on('open-protocol', (event, arg) => {
             this.resolveTask(arg)
         })
+
+        // 删除正在运行的任务和等待
+        ipcRenderer.on('del-active-task', (event) => {
+            const that = this;
+            this.props.task.getJobs().forEach(job => {
+                if (job.state !== 'complete') {
+                    that.props.task.deleteJob(job.id)
+                }
+            })
+        })
+
+
     }
 
     componentWillMount() {

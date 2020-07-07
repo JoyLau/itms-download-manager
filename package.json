@@ -1,6 +1,6 @@
 {
   "name": "itms-download-manager",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "ITMS Download Manager Desktop App",
   "main": "./public/electron.js",
   "author": {
@@ -11,7 +11,7 @@
   "build": {
     "productName": "ITMS Download Manager",
     "appId": "cn.joylau.code.itms-download-manager",
-    "copyright": "Copyright © 合肥安慧, Inc. All rights reserved.",
+    "copyright": "Copyright © 合肥安慧软件, Inc. All rights reserved.",
     "compression": "store",
     "asar": true,
     "files": [
@@ -27,7 +27,7 @@
       "output": "dist"
     },
     "win": {
-      "icon": "./static/icons/win.ico",
+      "icon": "./public/icons/win.ico",
       "target": [
         {
           "target": "nsis",
@@ -39,7 +39,7 @@
       ]
     },
     "mac": {
-      "icon": "./static/icons/osx.icns",
+      "icon": "./public/icons/osx.icns",
       "extendInfo": {
         "URL types": [
           {
@@ -52,16 +52,16 @@
       }
     },
     "dmg": {
-      "icon": "./static/icons/osx.icns"
+      "icon": "./public/icons/osx.icns"
     },
     "nsis": {
       "oneClick": false,
       "perMachine": true,
       "allowElevation": true,
       "allowToChangeInstallationDirectory": true,
-      "installerIcon": "./static/icons/win.ico",
-      "uninstallerIcon": "./static/icons/win.ico",
-      "installerHeaderIcon": "./static/icons/win.ico",
+      "installerIcon": "./public/icons/win.ico",
+      "uninstallerIcon": "./public/icons/win.ico",
+      "installerHeaderIcon": "./public/icons/win.ico",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "安慧管控平台文件下载器(通用版)",

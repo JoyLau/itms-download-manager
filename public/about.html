@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>关于</title>
+    <style>
+        html {
+            height: 100%;
+        }
+        body {
+            background-color: #eeeeee;
+            -webkit-app-region: drag;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            padding: 0;
+            overflow: hidden;
+            color: #666666;
+        }
+        img {
+            -webkit-user-drag: none;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .appName {
+            line-height: 30px;
+            font-size: 20px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <img src="icons/logo.png" style="width: 128px;" alt="">
+    <div class="appName">ITMS Download Manager Desktop App</div>
+    <span id="version"> </span>
+    <div>
+        Copyright © 合肥安慧软件, Inc. All rights reserved.
+    </div>
+</div>
+<script>
+    try {
+        var ver = navigator.userAgent.match(/itms-download-manager\/([\d.]+)/)[1]
+        document.getElementById('version').innerHTML = 'v' + ver + ' &copy; 2020 '
+    }catch (e) {
+
+    }
+</script>
+</body>
+</html>

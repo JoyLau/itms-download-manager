@@ -86,8 +86,8 @@ class CompleteView extends Component {
                         {
                             this.state.selectedItem ?
                                 <Popconfirm title="是否同时删除文件?"
-                                            onConfirm={this.removeTaskAndFile}
-                                            onCancel={this.removeTask}
+                                            onConfirm={this.removeTask}
+                                            onCancel={this.removeTaskAndFile}
                                             okText="删除任务"
                                             cancelText="删除文件">
                                     <Button disabled={!this.state.selectedItem}

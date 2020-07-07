@@ -37,17 +37,8 @@ class WindowControl extends React.Component{
   }
 
   onCloseClick(){
-    const that = this;
-    // 删除正在运行的任务和等待
-    this.props.task.getJobs().forEach(job => {
-      if (job.state !== 'complete') {
-        that.props.task.deleteJob(job.id)
-      }
-    })
-    setTimeout(function () {
-      const win = BrowserWindow.getFocusedWindow()
-      win && win.close()
-    },1000)
+    const win = BrowserWindow.getFocusedWindow()
+    win && win.hide()
   }
 
   onMinimizeClick(){

@@ -125,6 +125,10 @@ export function formatDate(time) {
     return YY + MM + DD +" "+hh + mm + ss;
 }
 
+export function formatDate_(time) {
+    return formatDate(time).replace(/ /g,"_").replace(/:/g,"-");
+}
+
 export function getCodeName(type,code) {
     const sysCodes = getStorage('sysCodes');
     if (sysCodes) {

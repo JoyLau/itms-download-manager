@@ -57,20 +57,20 @@ class ActiveView extends Component {
     }
 
     remove = () => {
-        eventBus.emit('stop',{})
+        eventBus.emit('stop',{taskId:this.state.selectedItem.id})
         this.props.task.deleteJob(this.state.selectedItem.id);
         this.changeMenuState();
     }
 
     resume = () => {
         // 发出通知
-        eventBus.emit('resume',{})
+        eventBus.emit('resume',{taskId:this.state.selectedItem.id})
         this.props.task.updateStateJob(this.state.selectedItem.id, 'active')
     }
 
     pause = () => {
         // 发出通知
-        eventBus.emit('pause',{})
+        eventBus.emit('pause',{taskId:this.state.selectedItem.id})
         // 保存当前进度
         this.props.task.updateJob(this.state.selectedItem.id,'process',this.props.jobProcess.process)
         // 更新状态
