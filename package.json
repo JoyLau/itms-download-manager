@@ -1,6 +1,6 @@
 {
   "name": "itms-download-manager",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "ITMS Download Manager Desktop App",
   "main": "./public/electron.js",
   "author": {

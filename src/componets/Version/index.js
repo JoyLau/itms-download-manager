@@ -1,13 +1,12 @@
 import React, {Component} from 'react';
 import { message, Progress, Tooltip} from "antd";
 import pck from '../../../package.json'
-import {eventBus} from "../../util/utils";
+import {eventBus,waitMoment} from "../../util/utils";
 import semver from 'semver';
-import SoundOutlined from "@ant-design/icons/lib/icons/SoundOutlined";
 import progress from 'request-progress';
 import config from '../../util/config'
 import './style.css'
-import device from "../../util/device";
+import { SoundOutlined} from'@ant-design/icons';
 
 const request = window.require('request')
 const fs = window.require('fs');
@@ -44,6 +43,12 @@ class Version extends Component {
 
     }
 
+    close = () => {
+        this.setState({
+            visible: false
+        })
+    }
+
     update = () => {
         const that = this;
 
@@ -60,13 +65,13 @@ class Version extends Component {
 
             const downloadUrl = rootPath + config.sep + fileName;
 
-            console.info("downloadUrl:", downloadUrl)
+            console.info("new version package download url:", downloadUrl)
 
             const _request = request(downloadUrl);
 
             const savePath = os.tmpdir() + config.sep + fileName;
 
-            console.info("savePath:", savePath)
+            console.info("package save path:", savePath)
 
             progress(_request, {
                 // throttle: 2000,                    // Throttle the progress event to 2000ms, defaults to 1000ms
@@ -98,23 +103,22 @@ class Version extends Component {
                         percent: null,
                     })
                 })
-                .on('end', function () {
+                .on('end', async function () {
                     that.setState({
                         percent: 100,
                     })
-                    console.info("download end")
+                    console.info("package download end!");
 
-                    if (device.macOS) {
-                        shell.showItemInFolder(savePath)
-                    }
+                    await waitMoment(5000);
 
-                    if (device.windows) {
-                        shell.showItemInFolder(savePath);
-                    }
-
-                    setTimeout(function () {
-                        app.quit();
-                    }, 2000)
+                    shell.openPath(savePath)
+                        .then(async () => {
+                            await waitMoment(2000);
+                            app.quit();
+                        })
+                        .catch(e => {
+                            console.error(e)
+                        })
                 })
                 .pipe(fs.createWriteStream(savePath));
         } catch (e) {
@@ -126,22 +130,33 @@ class Version extends Component {
     render() {
 
         return (
-            <div>
+            <div className='Version'>
                 <div style={{position: 'absolute', bottom: '0',width: '100%',padding:'10px 20px 10px 20px'}}>
                     <div>
                         <Tooltip
-                            title={<span><SoundOutlined />  发现新版本!<a onClick={this.update}>  立即更新</a></span>}
+                            title={<div><span style={{color: 'red'}}><SoundOutlined/>&nbsp;&nbsp;发现新版本!<a onClick={this.update}>&nbsp;立即更新&nbsp;&nbsp;&nbsp;</a></span></div>}
                             visible = {this.state.visible}
                             placement={'rightTop'}
                             trigger={[]}
                         >
-                            <span style={{fontSize: '10px', color: '#ffffff'}}>v{pck.version}</span>
+                            <span style={{fontSize: '10px', color: '#ffffff'}} onClick={this.close}>v{pck.version}</span>
 
                         </Tooltip>
                     </div>
                     {
                         this.state.percent ?
-                            <Progress percent={this.state.percent} size="small" status="active"/>
+                            <Progress
+                                percent={this.state.percent}
+                                size="small"
+                                status="active"
+                                format={(percent, successPercent) => {
+                                    if (percent === 100) {
+                                        return "请稍等"
+                                    } else {
+                                        return percent + '%';
+                                    }
+                                }}
+                            />
                             : null
                     }
 
