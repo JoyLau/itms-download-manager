@@ -20,6 +20,8 @@ class Connecter extends React.Component {
             this.resolveTask(arg)
         })
 
+        eventBus.on('add-task',(arg) => this.resolveTask(arg))
+
         // 删除正在运行的任务和等待
         ipcRenderer.on('del-active-task', (event) => {
             const that = this;

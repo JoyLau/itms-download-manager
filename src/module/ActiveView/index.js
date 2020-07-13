@@ -1,16 +1,18 @@
 import React, {Component} from 'react'
-import {Button, Layout, List, Divider, Popconfirm} from 'antd'
+import {Button, Layout, List, Divider, Popconfirm, Modal, Input} from 'antd'
 
 import EmptyContent from "../../componets/EmptyContent";
 import WindowControl from "../../componets/WindowControl";
 import {inject, observer} from "mobx-react";
-import {CaretRightOutlined, DeleteOutlined, PauseOutlined} from "@ant-design/icons";
+import {CaretRightOutlined, DeleteOutlined, PauseOutlined,PlusOutlined} from "@ant-design/icons";
 import ActiveItem from "./activeItem";
 import ProcessItem from "./processItem";
 import {eventBus} from "../../util/utils";
+import CryptoJS from 'crypto-js';
 
 
 const {Header, Content} = Layout;
+const {TextArea} = Input;
 
 @inject('task','jobProcess')
 @observer
@@ -18,6 +20,7 @@ class ActiveView extends Component {
 
     state = {
         selectedItem: null,
+        visible: false
     }
 
     onItemClick = item => {
@@ -77,10 +80,61 @@ class ActiveView extends Component {
         this.props.task.updateStateJob(this.state.selectedItem.id, 'paused')
     }
 
+    showModal = () => {
+        this.setState({
+            visible: true
+        })
+    }
+
+    handleCancel = () => {
+        this.setState({
+            visible: false
+        })
+    }
+
+    handleOk = () => {
+        const passphrase = this.state.passphrase;
+        if (passphrase) {
+            const originalText = CryptoJS.AES.decrypt(passphrase, '').toString(CryptoJS.enc.Utf8);
+            console.info("口令解密后的数据:",originalText)
+            eventBus.emit('add-task',originalText)
+            this.setState({
+                visible: false
+            })
+        }
+    }
+
+    renderAddTaskDialog(){
+        return (
+            <Modal
+                destroyOnClose={true}
+                title={'新建下载'}
+                wrapClassName="newTaskDialog"
+                maskStyle={{backgroundColor: 'transparent'}}
+                centered
+                maskClosable={false}
+                visible={this.state.visible}
+                footer={false}
+                onOk={this.handleOk}
+                onCancel={this.handleCancel}
+            >
+                <TextArea onChange={(e) => this.setState({passphrase: e.target.value})}
+                          onPressEnter={this.handleOk}
+                          placeholder={'将复制的口令粘贴到此处即可开始下载'}
+                          autoSize={{minRows: 6, maxRows: 20}}/>
+                <div className="ant-modal-footer">
+                    <Button type="primary" onClick={this.handleOk} size={'small'}>立即下载</Button>
+                </div>
+            </Modal>
+        )
+    }
+
     render() {
         return (
             <Layout>
                 <Header className="darg-move-window header-toolbar">
+                    <Button type="primary" size={'small'} onClick={this.showModal}><PlusOutlined style={{fontWeight: 700}}/></Button>
+                    <Divider type="vertical"/>
                     <div>
                         {
                             this.state.selectedItem && (this.state.selectedItem.state === 'paused' || this.state.selectedItem.state === 'error') ?
@@ -125,6 +179,7 @@ class ActiveView extends Component {
                             <EmptyContent textType={'active'}/>
                     }
                 </Content>
+                {this.renderAddTaskDialog()}
             </Layout>
         )
     }
