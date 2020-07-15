@@ -18,9 +18,11 @@ import {
 import Bagpipe from "../../Bagpipe/bagpipe";
 import config from '../../../util/config'
 import {toJS} from "mobx";
+import {tmpdir} from '../../../util/utils'
 
 
 const fs = window.require('fs');
+const fse = window.require('fs-extra');
 const ExcelJS = window.require('exceljs')
 
 @inject('global', "task", 'sysCode','jobProcess')
@@ -239,15 +241,12 @@ class IllegalVehAll extends Component {
         const taskName = item.taskName;
 
         try { // 文件目录不存在则创建目录
-            const path = this.props.global.savePath + config.sep + taskId;
+            const path = tmpdir + config.sep + taskId;
 
             const fileName = item.plateNum + "_" + item.deviceSysNbr + "_" + item.snapNbr + "_" + index + ".jpg";
             const filePath = path + config.sep + fileName;
 
-            if (!fs.existsSync(path)) {
-                fs.mkdirSync(path)
-            }
-
+            fse.ensureDirSync(path)
 
             progress(request(item.downloadUrl + "?imgUrl=" + encodeURIComponent(item.imgUrl)), {
                 // throttle: 2000,                    // Throttle the progress event to 2000ms, defaults to 1000ms

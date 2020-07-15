@@ -9,6 +9,7 @@ import IllegalVeh from "./illegalVeh";
 import axios from "axios";
 
 const {ipcRenderer} = window.require('electron')
+const fse = window.require('fs-extra');
 
 @inject('global', 'task')
 @observer
@@ -35,6 +36,8 @@ class Connecter extends React.Component {
         // 向主进程发送配置信息
         ipcRenderer.send("setting",this.props.global)
 
+        // 确保下载目录是否存在, 不存在则创建他
+        fse.ensureDirSync(this.props.global.savePath)
 
     }
 

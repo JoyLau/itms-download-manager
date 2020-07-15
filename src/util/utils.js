@@ -1,6 +1,9 @@
 import React from 'react'
 import {LoadingOutlined} from "@ant-design/icons";
 import Dexie from "dexie";
+import config from "./config";
+
+const os = window.require('os')
 
 const EventEmitter = window.require('events').EventEmitter
 
@@ -10,13 +13,13 @@ const compressing = window.require('compressing');
 
 const fse = window.require('fs-extra');
 
-const publicKey = "itms-download-manager";
-
 const db = new Dexie("metaDB");
 db.version(1).stores({ meta: 'taskId'});
 
 export const metaDB = db.table('meta')
 
+
+export const tmpdir = os.tmpdir()
 
 export const statusText = {
     'paused': '暂停',
@@ -83,7 +86,7 @@ export function md5Sign(data) {
  * AES 加密
  */
 export function aesEncrypt(data) {
-    let cipher = crypto.createCipher('aes192', publicKey);
+    let cipher = crypto.createCipher('aes192', config.PROTOCOL);
     let crypted = cipher.update(data, 'utf8', 'hex');
     crypted += cipher.final('hex');
     return crypted;
@@ -93,7 +96,7 @@ export function aesEncrypt(data) {
  * AES 解密
  */
 export function aesDecrypt(encrypted) {
-    const decipher = crypto.createDecipher('aes192', publicKey);
+    const decipher = crypto.createDecipher('aes192', config.PROTOCOL);
     let decrypted = decipher.update(encrypted, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
     return decrypted;

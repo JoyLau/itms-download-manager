@@ -23,6 +23,7 @@ import {
 import Bagpipe from "../../Bagpipe/bagpipe";
 import config from '../../../util/config'
 import {toJS} from "mobx";
+import {tmpdir} from '../../../util/utils'
 
 
 const fs = window.require('fs');
@@ -95,7 +96,7 @@ class PassVehAll extends Component {
             const metaFileName = "metaData.zip"
 
             // 任务跟目录
-            const taskRootPath = this.props.global.savePath + config.sep + data.id;
+            const taskRootPath = tmpdir + config.sep + data.id;
 
             // 元数据目录
             const metaFilePath = taskRootPath + config.sep + "metaData";
@@ -276,11 +277,11 @@ class PassVehAll extends Component {
                 // 如果全部完成了
                 if (finish) {
                     // 删除 metaData 临时文件目录
-                    fse.removeSync(that.props.global.savePath + config.sep + taskId + config.sep + "metaData");
+                    fse.removeSync(tmpdir + config.sep + taskId + config.sep + "metaData");
 
                     const bg = new Bagpipe(1, {});
 
-                    const rootPath = that.props.global.savePath + config.sep + taskId;
+                    const rootPath = tmpdir + config.sep + taskId;
 
                     allData.forEach((val,index) => {
                         const key = Object.keys(val)[0];
@@ -322,7 +323,7 @@ class PassVehAll extends Component {
         const parentPathName = item.dirName;
 
         try {
-            const rootPath = this.props.global.savePath + config.sep + taskId;
+            const rootPath = tmpdir + config.sep + taskId;
 
             const parentPath = rootPath + config.sep + parentPathName;
 

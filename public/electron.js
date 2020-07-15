@@ -1,7 +1,6 @@
 const {app, BrowserWindow, Menu, shell, Tray, globalShortcut, ipcMain,nativeImage} = require('electron')
-
 const path = require('path');
-
+const os = require('os');
 
 let win;
 let tray;
@@ -148,6 +147,12 @@ if (!gotTheLock) {
                 // 打开控制台
                 win.webContents.isDevToolsOpened() ? win.webContents.closeDevTools() : win.webContents.openDevTools();
             })
+
+            globalShortcut.register('CommandOrControl+Alt+Shift+T', () => {
+                // 打开临时目录
+                shell.showItemInFolder(os.tmpdir())
+            })
+
         })
         .then(() => {
             ipcMain.on('setting', (event, arg) => {
