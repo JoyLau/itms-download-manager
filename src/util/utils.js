@@ -14,12 +14,12 @@ const compressing = window.require('compressing');
 const fse = window.require('fs-extra');
 
 const db = new Dexie("metaDB");
-db.version(1).stores({ meta: 'taskId'});
+db.version(1).stores({meta: 'taskId'});
 
 export const metaDB = db.table('meta')
 
 
-export const tmpdir = os.tmpdir()
+export const tmpdir = os.tmpdir() + config.sep + config.PROTOCOL;
 
 export const statusText = {
     'paused': '暂停',
@@ -118,10 +118,14 @@ export function formatTime(seconds) {
         newMin = min % 60;
     }
 
-    if (second < 10) { second = '0' + second;}
-    if (min < 10) { min = '0' + min;}
+    if (second < 10) {
+        second = '0' + second;
+    }
+    if (min < 10) {
+        min = '0' + min;
+    }
 
-    return hour? (hour + ':' + newMin + ':' + second) : (min + ':' + second);
+    return hour ? (hour + ':' + newMin + ':' + second) : (min + ':' + second);
 }
 
 /**
@@ -137,14 +141,14 @@ export function formatDate(time) {
     const hh = (date.getHours() < 10 ? '0' + date.getHours() : date.getHours()) + ':';
     const mm = (date.getMinutes() < 10 ? '0' + date.getMinutes() : date.getMinutes()) + ':';
     const ss = (date.getSeconds() < 10 ? '0' + date.getSeconds() : date.getSeconds());
-    return YY + MM + DD +" "+hh + mm + ss;
+    return YY + MM + DD + " " + hh + mm + ss;
 }
 
 export function formatDate_(time) {
-    return formatDate(time).replace(/ /g,"_").replace(/:/g,"-");
+    return formatDate(time).replace(/ /g, "_").replace(/:/g, "-");
 }
 
-export function getCodeName(type,code) {
+export function getCodeName(type, code) {
     const sysCodes = getStorage('sysCodes');
     if (sysCodes) {
         const sysCode = sysCodes[type].find(val => val.value === code)
@@ -160,7 +164,7 @@ export function getCodeName(type,code) {
  * @param query
  * @returns {{}}
  */
-export function parseURLQueryString(query){
+export function parseURLQueryString(query) {
     let theRequest = {};
     if (query.indexOf("?") !== -1) {
         let str = query.substr(1);
@@ -176,35 +180,33 @@ export function parseURLQueryString(query){
 /**
  * 压缩
  */
-export async function zip(source,dest,clean) {
+export async function zip(source, dest, clean) {
     await compressing.zip.compressDir(source, dest)
         .then(() => {
-            if (clean){
+            if (clean) {
                 fse.removeSync(source)
             }
-
         })
-
 }
 
 /**
  * 解压缩
  */
-export async function unzip(source,dest,clean) {
+export async function unzip(source, dest, clean) {
     await compressing.zip.uncompress(source, dest)
         .then(() => {
-            if (clean){
+            if (clean) {
                 fse.removeSync(source)
             }
         })
 }
 
-export function updateNotification(notification,options) {
+export function updateNotification(notification, options) {
     notification.open({
         key: options.key,
         message: options.message,
-        description:options.description,
-        icon: <LoadingOutlined style={{ color: '#108ee9' }} spin={true}/>,
+        description: options.description,
+        icon: <LoadingOutlined style={{color: '#108ee9'}} spin={true}/>,
     });
 }
 
@@ -213,7 +215,7 @@ export function fileExists(path) {
     return fse.pathExistsSync(path)
 }
 
-export function closeNotification(notification,key) {
+export function closeNotification(notification, key) {
     notification.close(key);
 }
 

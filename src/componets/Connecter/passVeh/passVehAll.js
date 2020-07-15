@@ -293,9 +293,14 @@ class PassVehAll extends Component {
                         bg.push(that.creatExcel, iData, excelPath,async function () {
                             // 所有 excel 都生成完毕
                             if (index + 1 === allData.length){
+
+                                const zipFullPath = that.props.global.savePath + config.sep + taskName;
+
+                                const newPath = taskName.replace('.zip',"");
+                                // 重命名
+                                fse.renameSync(rootPath, newPath)
                                 // 生成压缩包
-                                const zipFullPath = that.props.global.savePath + config.sep + taskName.replace(".zip", "") + '.zip';
-                                await zip(rootPath, zipFullPath, true)
+                                await zip(newPath, zipFullPath, true)
 
                                 // 播放下载完成提示音和通知
                                 eventBus.emit('start-tips', taskName, zipFullPath)

@@ -306,9 +306,14 @@ class IllegalVehAll extends Component {
                         // 生成 excel
                         await that.creatExcel(that.state.job.item, path);
 
+
+                        const zipFullPath = that.props.global.savePath + config.sep + taskName;
+
+                        const newPath = taskName.replace('.zip',"");
+                        // 重命名
+                        fse.renameSync(path, newPath)
                         // 生成压缩包
-                        const zipFullPath = that.props.global.savePath + config.sep + taskName.replace(".zip", "") + '.zip';
-                        await zip(path, zipFullPath, true)
+                        await zip(newPath, zipFullPath, true)
 
 
                         // 播放下载完成提示音和通知

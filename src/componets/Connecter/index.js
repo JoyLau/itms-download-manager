@@ -3,7 +3,7 @@ import {inject, observer} from "mobx-react";
 import config from "../../util/config"
 import {message} from 'antd';
 import PassVeh from './passVeh'
-import {eventBus} from "../../util/utils";
+import {eventBus,tmpdir} from "../../util/utils";
 import Tips from "../Tips";
 import IllegalVeh from "./illegalVeh";
 import axios from "axios";
@@ -38,6 +38,9 @@ class Connecter extends React.Component {
 
         // 确保下载目录是否存在, 不存在则创建他
         fse.ensureDirSync(this.props.global.savePath)
+
+        // 确保临时目录存在, 不存在则创建他
+        fse.ensureDirSync(tmpdir)
 
     }
 

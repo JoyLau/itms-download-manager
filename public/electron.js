@@ -150,7 +150,7 @@ if (!gotTheLock) {
 
             globalShortcut.register('CommandOrControl+Alt+Shift+T', () => {
                 // 打开临时目录
-                shell.showItemInFolder(os.tmpdir())
+                shell.showItemInFolder(os.tmpdir() + path.sep + PROTOCOL)
             })
 
         })

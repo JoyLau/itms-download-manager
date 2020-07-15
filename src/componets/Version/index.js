@@ -1,7 +1,7 @@
 import React, {Component} from 'react';
 import { message, Progress, Tooltip} from "antd";
 import pck from '../../../package.json'
-import {eventBus,waitMoment} from "../../util/utils";
+import {eventBus,waitMoment,tmpdir} from "../../util/utils";
 import semver from 'semver';
 import progress from 'request-progress';
 import config from '../../util/config'
@@ -10,7 +10,6 @@ import { SoundOutlined} from'@ant-design/icons';
 
 const request = window.require('request')
 const fs = window.require('fs');
-const os = window.require('os')
 const {shell,app} = window.require('electron').remote;
 
 class Version extends Component {
@@ -69,7 +68,7 @@ class Version extends Component {
 
             const _request = request(downloadUrl);
 
-            const savePath = os.tmpdir() + config.sep + fileName;
+            const savePath = tmpdir + config.sep + fileName;
 
             console.info("package save path:", savePath)
 
