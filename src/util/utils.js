@@ -42,12 +42,24 @@ export async function setStorage(key, value) {
     localStorage.setItem(key, JSON.stringify(value))
 }
 
+export function getSessionStorage(key) {
+    let val = sessionStorage.getItem(key);
+    try {
+        if (val) {
+            val = JSON.parse(val)
+        }
+    } catch (e) {
+        val = null
+    }
+    return val
+}
+
+export function setSessionStorage(key, value) {
+    sessionStorage.setItem(key, JSON.stringify(value))
+}
+
 export const eventBus = new EventEmitter();
 
-
-export function getStatusText(status) {
-    return statusText[status] || status
-}
 
 export function getFileExt(file) {
     if (!file || file.indexOf('.') === -1) return '';

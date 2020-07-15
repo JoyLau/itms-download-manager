@@ -32,6 +32,9 @@ class Connecter extends React.Component {
             })
         })
 
+        // 向主进程发送配置信息
+        ipcRenderer.send("setting",this.props.global)
+
 
     }
 

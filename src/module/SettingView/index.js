@@ -10,6 +10,7 @@ const { Option } = Select;
 const {dialog} = window.require('electron').remote;
 
 const os = window.require('os')
+const {ipcRenderer} = window.require('electron')
 
 @inject('global')
 @observer
@@ -34,6 +35,12 @@ class SettingView extends React.Component {
     }
 
 
+    powerOn = (e) => {
+        this.props.global.changePowerOn(e.target.checked);
+        // 向主进程发送配置信息
+        ipcRenderer.send("setting",this.props.global)
+    }
+
     render() {
         let marks = {};
         os.cpus().forEach((value, index) => {
@@ -56,7 +63,7 @@ class SettingView extends React.Component {
                         <Col span={6}>启动</Col>
                         <Col span={18}>
                             <Row style={colRowStyle}>
-                                <Checkbox checked={this.props.global.powerOn} onChange={(e) => {this.props.global.changePowerOn(e.target.checked)}}>开机启动</Checkbox>
+                                <Checkbox checked={this.props.global.powerOn} onChange={this.powerOn}>开机启动</Checkbox>
                             </Row>
                             <Row>
                                 <Checkbox checked={this.props.global.autoStart} onChange={(e) => {this.props.global.changeAutoStart(e.target.checked)}}>启动后自动开始未完成的任务</Checkbox>
@@ -91,17 +98,32 @@ class SettingView extends React.Component {
                     <Row gutter={rowGutter}>
                         <Col span={6}>下载设置</Col>
                         <Col span={18}>
-                            <Row>
+                            <Row style={colRowStyle}>
                                 <Col span={4}>
                                     最大线程数
                                 </Col>
                                 <Col span={20}>
                                     <Select value={this.props.global.maxJobs} size={'small'} style={{ width: '20%' }} onChange={(value)=>this.props.global.changeMaxJobs(value)}>
+                                        <Option key="auto" value={(Object.values(marks).length / 2).toString()}>智能</Option>
                                         {
                                             Object.values(marks).map(value => {
                                                 return <Option key={value} value={value}>{value}</Option>
                                             })
                                         }
+                                    </Select>
+                                </Col>
+                            </Row>
+                            <Row>
+                                <Col span={4}>
+                                    最大任务数
+                                </Col>
+                                <Col span={20}>
+                                    <Select value={this.props.global.maxTasks} size={'small'} style={{ width: '20%' }} onChange={(value)=>this.props.global.changeMaxTasks(value)}>
+                                        <Option value={1}>1</Option>
+                                        <Option value={2}>2</Option>
+                                        <Option value={3}>3</Option>
+                                        <Option value={4}>4</Option>
+                                        <Option value={5}>5</Option>
                                     </Select>
                                 </Col>
                             </Row>

@@ -241,7 +241,7 @@ class IllegalVehAll extends Component {
         try { // 文件目录不存在则创建目录
             const path = this.props.global.savePath + config.sep + taskId;
 
-            const fileName = item.plateNum + "_" + item.deviceSysNbr + "_" + item.snapNbr + ".jpg";
+            const fileName = item.plateNum + "_" + item.deviceSysNbr + "_" + item.snapNbr + "_" + index + ".jpg";
             const filePath = path + config.sep + fileName;
 
             if (!fs.existsSync(path)) {

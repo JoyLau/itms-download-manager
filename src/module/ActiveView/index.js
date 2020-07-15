@@ -1,5 +1,5 @@
 import React, {Component} from 'react'
-import {Button, Layout, List, Divider, Popconfirm, Modal, Input} from 'antd'
+import {Button, Layout, List, Divider, Popconfirm, Modal, Input, message} from 'antd'
 
 import EmptyContent from "../../componets/EmptyContent";
 import WindowControl from "../../componets/WindowControl";
@@ -9,6 +9,7 @@ import ActiveItem from "./activeItem";
 import ProcessItem from "./processItem";
 import {eventBus} from "../../util/utils";
 import CryptoJS from 'crypto-js';
+import config from "../../util/config";
 
 
 const {Header, Content} = Layout;
@@ -94,9 +95,18 @@ class ActiveView extends Component {
 
     handleOk = () => {
         const passphrase = this.state.passphrase;
-        if (passphrase) {
-            const originalText = CryptoJS.AES.decrypt(passphrase, '').toString(CryptoJS.enc.Utf8);
+        if (passphrase && passphrase !== '') {
+            let originalText = ''
+            try {
+                originalText = CryptoJS.AES.decrypt(passphrase, '').toString(CryptoJS.enc.Utf8);
+            } catch (e) {
+                console.error(e);
+            }
             console.info("口令解密后的数据:",originalText)
+            if (originalText === '' || originalText.indexOf(config.PROTOCOL) < 0) {
+                message.error("口令错误!")
+                return;
+            }
             eventBus.emit('add-task',originalText)
             this.setState({
                 visible: false

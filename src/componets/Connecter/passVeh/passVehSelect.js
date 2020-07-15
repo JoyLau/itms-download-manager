@@ -243,7 +243,7 @@ class PassVehSelect extends Component {
         try { // 文件目录不存在则创建目录
             const path = this.props.global.savePath + config.sep + taskId;
 
-            const fileName = item.plateNum + "_" + item.device_nbr + "_" + item.snap_nbr + ".jpg";
+            const fileName = item.plateNum + "_" + item.device_nbr + "_" + item.snap_nbr + "_" + index + ".jpg";
             const filePath = path + config.sep + fileName;
 
             if (!fs.existsSync(path)) {

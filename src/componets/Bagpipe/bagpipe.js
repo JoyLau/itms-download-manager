@@ -27,7 +27,7 @@ class Bagpipe extends EventEmitter {
   constructor(limit, options = {}) {
     super();
 
-    this.limit = limit;
+    this.limit = Number(limit);
     this.active = 0;
     this.queue = [];
     this.isPause = false;

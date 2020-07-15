@@ -1,5 +1,5 @@
 import {observable, action, configure} from 'mobx';
-import {getStorage,setStorage} from "../util/utils";
+import {getSessionStorage,setSessionStorage} from "../util/utils";
 // configure({
 //     enforceActions: 'always'
 // });
@@ -11,13 +11,13 @@ class SysCode {
 
     // 当前显示的左侧菜单项
     @observable
-    sysCodes = getStorage('sysCodes') ? getStorage('sysCodes') : {}
+    sysCodes = getSessionStorage('sysCodes') ? setSessionStorage('sysCodes') : {}
 
 
     @action
     updateSysCodes(key, value) {
         this.sysCodes[key] = value;
-        setStorage("sysCodes",this.sysCodes)
+        setSessionStorage("sysCodes",this.sysCodes)
 
     }
 }

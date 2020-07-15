@@ -271,8 +271,8 @@ class PassVehAll extends Component {
         console.info("active 任务信息:", activeTask)
 
         const nowTime = new Date().getTime();
-        totalData.forEach(item => {
-            this.downloadBagpipe.push(that.allDownload, nowTime, job, item, total, async function (finish) {
+        totalData.forEach((item,index) => {
+            this.downloadBagpipe.push(that.allDownload, index, nowTime, job, item, total, async function (finish) {
                 // 如果全部完成了
                 if (finish) {
                     // 删除 metaData 临时文件目录
@@ -315,7 +315,7 @@ class PassVehAll extends Component {
         })
     }
 
-    allDownload = async (startTime,task, item, total, callback) => {
+    allDownload = async (index, startTime,task, item, total, callback) => {
         let that = this;
         const taskId = item.taskId;
         const taskName = task.name;
@@ -330,7 +330,7 @@ class PassVehAll extends Component {
             fse.mkdirpSync(parentPath);
 
             const imageUrl = item.image_url_path ? item.image_url_path.split(";")[0] : "";
-            const fileName = item.plate_nbr + "_" + item.device_nbr + "_" + item.snap_nbr + ".jpg";
+            const fileName = item.plate_nbr + "_" + item.device_nbr + "_" + item.snap_nbr + "_" + index + ".jpg";
 
             const fileFullPath = parentPath + config.sep + fileName;
 

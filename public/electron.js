@@ -1,4 +1,4 @@
-const {app, BrowserWindow, Menu, shell, Tray, globalShortcut, ipcMain} = require('electron')
+const {app, BrowserWindow, Menu, shell, Tray, globalShortcut, ipcMain,nativeImage} = require('electron')
 
 const path = require('path');
 
@@ -58,12 +58,14 @@ function createWindow() {
 }
 
 function creatTray() {
-
     if (process.platform === 'darwin') {
-        return;
+        const image = nativeImage.createFromPath(path.join(__dirname, 'icons/tray@2x.png'));
+        image.setTemplateImage(true)
+        tray = new Tray(image);
+    } else {
+        tray = new Tray(path.join(__dirname, 'icons/win.ico'));
     }
 
-    tray = new Tray(path.join(__dirname, 'icons/win.ico'));
     tray.setToolTip(winTitle);
 
     let contextMenu = Menu.buildFromTemplate([
@@ -145,6 +147,15 @@ if (!gotTheLock) {
             globalShortcut.register('CommandOrControl+Alt+Shift+F12', () => {
                 // 打开控制台
                 win.webContents.isDevToolsOpened() ? win.webContents.closeDevTools() : win.webContents.openDevTools();
+            })
+        })
+        .then(() => {
+            ipcMain.on('setting', (event, arg) => {
+                // 设置是否开机启动
+                app.setLoginItemSettings({
+                    openAtLogin: arg.powerOn
+                })
+                console.log("设置开机启动:",arg.powerOn)
             })
         })
 
