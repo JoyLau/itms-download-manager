@@ -1,9 +1,10 @@
 import React from 'react'
-import {Layout, Input, Radio, Row, Col, Checkbox, Select,} from 'antd'
+import {Layout, Input, Radio, Row, Col, Checkbox, Select, Button, Space, message,} from 'antd'
 import {FolderOutlined} from '@ant-design/icons';
 import WindowControl from "../../componets/WindowControl";
 import {inject, observer} from "mobx-react";
-import {eventBus} from "../../util/utils";
+import {eventBus,tmpdir,bytesToSize} from "../../util/utils";
+import {toJS} from "mobx";
 
 const {Header} = Layout;
 const { Option } = Select;
@@ -11,10 +12,27 @@ const {dialog} = window.require('electron').remote;
 
 const os = window.require('os')
 const {ipcRenderer} = window.require('electron')
+const klaw = window.require('klaw')
+const fse = window.require('fs-extra');
 
-@inject('global')
+@inject('global','task')
 @observer
 class SettingView extends React.Component {
+
+    state = {
+        cacheSize: 0
+    }
+
+    componentDidMount() {
+        this.collectCache();
+    }
+
+    collectCache = () => {
+        let size = 0;
+        klaw(tmpdir)
+            .on('data', item => size = size + item.stats.size)
+            .on('end', () => this.setState({cacheSize: size < 1024 ? 0 : size}))
+    }
 
     openFileDialog() {
         dialog.showOpenDialog({
@@ -39,6 +57,18 @@ class SettingView extends React.Component {
         this.props.global.changePowerOn(e.target.checked);
         // 向主进程发送配置信息
         ipcRenderer.send("setting",this.props.global)
+    }
+
+    clearCache = () => {
+        if (this.state.cacheSize ===0 ) {
+            return;
+        }
+        if (toJS(this.props.task.getJobs().filter(item => item.state === 'active').length > 0)) {
+            message.warning("当前有任务正在下载中, 请稍后再试!")
+            return;
+        }
+        fse.emptyDirSync(tmpdir);
+        this.collectCache();
     }
 
     render() {
@@ -137,6 +167,14 @@ class SettingView extends React.Component {
                             </Row>
                             <Row>
                                 <Checkbox checked={this.props.global.delNotExist} onChange={(e) => {this.props.global.changeDelNotExist(e.target.checked)}}>自动删除 "文件不存在" 的任务</Checkbox>
+                            </Row>
+                        </Col>
+                    </Row>
+                    <Row gutter={rowGutter}>
+                        <Col span={6}>磁盘缓存</Col>
+                        <Col span={18}>
+                            <Row style={colRowStyle}>
+                                <Space><span>{bytesToSize(this.state.cacheSize)}</span> <Button size={'small'} type="primary" onClick={this.clearCache}>清除缓存</Button></Space>
                             </Row>
                         </Col>
                     </Row>

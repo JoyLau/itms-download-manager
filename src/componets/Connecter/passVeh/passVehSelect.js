@@ -273,9 +273,6 @@ class PassVehSelect extends Component {
                 })
                 .on('error', function (err) {
                     console.info(err)
-                    // 下载出错删除文件
-                    fs.unlinkSync(filePath);
-
                     // 更改任务状态为 error
                     that.props.task.updateStateJob(taskId, "error")
 

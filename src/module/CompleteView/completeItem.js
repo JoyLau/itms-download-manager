@@ -2,14 +2,29 @@ import React from 'react'
 import {Avatar, Badge, Divider, List, Progress,Typography} from 'antd'
 import {bytesToSize,formatTime,fileExists} from '../../util/utils'
 import {CheckCircleTwoTone,WarningOutlined, DeleteOutlined} from "@ant-design/icons";
+import {inject, observer} from "mobx-react";
 
 const fs = window.require('fs');
 const { Text } = Typography;
 
+let notExits = []
+
+@inject('task','global')
+@observer
 class CompleteItem extends React.Component {
+
+    componentDidMount() {
+        // 删除文件不存在的任务
+        if (this.props.global.delNotExist) {
+            notExits.forEach(id => {
+                this.props.task.deleteJob(id)
+            })
+        }
+    }
 
     renderDesc = (exists,item) => {
         if (!exists) {
+            notExits.push(item.id)
             return (
                 <Text disabled type="danger"><WarningOutlined /> 文件已被移动或删除</Text>
             )

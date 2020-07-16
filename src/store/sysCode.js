@@ -11,7 +11,7 @@ class SysCode {
 
     // 当前显示的左侧菜单项
     @observable
-    sysCodes = getSessionStorage('sysCodes') ? setSessionStorage('sysCodes') : {}
+    sysCodes = getSessionStorage('sysCodes') ? getSessionStorage('sysCodes') : {}
 
 
     @action

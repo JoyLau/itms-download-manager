@@ -93,6 +93,7 @@
     "compressing": "^1.5.1",
     "exceljs": "^4.1.0",
     "fs-extra": "^9.0.1",
+    "klaw": "^3.0.0",
     "readdirp": "^3.4.0",
     "request": "^2.88.2",
     "wrench": "^1.5.9"
