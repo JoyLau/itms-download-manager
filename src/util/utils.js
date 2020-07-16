@@ -3,7 +3,12 @@ import {LoadingOutlined} from "@ant-design/icons";
 import Dexie from "dexie";
 import config from "./config";
 
+const path = window.require('path')
+
 const os = window.require('os')
+
+// mac 下是按 1000 算的
+const precision = os.platform() === 'darwin' ? 1000 : 1024;
 
 const EventEmitter = window.require('events').EventEmitter
 
@@ -20,6 +25,24 @@ export const metaDB = db.table('meta')
 
 
 export const tmpdir = os.tmpdir() + config.sep + config.PROTOCOL;
+
+/**
+ * 获取路径的最后一个 / 后面的名称
+ * @param p
+ * @returns {string}
+ */
+export function basename(p) {
+    return path.posix.basename(p)
+}
+
+/**
+ * 获取路径的中的文件名(不带后缀名)
+ * @param f
+ * @returns {string}
+ */
+export function filename(f) {
+    return path.posix.basename(f,path.extname(f))
+}
 
 export const statusText = {
     'paused': '暂停',
@@ -72,10 +95,9 @@ export function getFileExt(file) {
 export function bytesToSize(bytes) {
     bytes = Number(bytes);
     if (bytes === 0 || !bytes || isNaN(bytes)) return '0 B';
-    const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    const i = Math.floor(Math.log(bytes) / Math.log(precision));
+    return parseFloat((bytes / Math.pow(precision, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
 export function md5Sign(data) {

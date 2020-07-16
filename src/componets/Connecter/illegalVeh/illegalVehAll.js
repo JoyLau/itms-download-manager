@@ -18,7 +18,7 @@ import {
 import Bagpipe from "../../Bagpipe/bagpipe";
 import config from '../../../util/config'
 import {toJS} from "mobx";
-import {tmpdir} from '../../../util/utils'
+import {tmpdir,basename,filename} from '../../../util/utils'
 
 
 const fs = window.require('fs');
@@ -309,7 +309,7 @@ class IllegalVehAll extends Component {
 
                         const zipFullPath = that.props.global.savePath + config.sep + taskName;
 
-                        const newPath = taskName.replace('.zip',"");
+                        const newPath = path.replace(basename(path),filename(taskName));
                         // 重命名
                         fse.renameSync(path, newPath)
                         // 生成压缩包

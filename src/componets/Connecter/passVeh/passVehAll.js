@@ -18,7 +18,7 @@ import {
     waitMoment,
     bytesToSize,
     formatTime, unzip,
-    formatDate_,
+    formatDate_, basename, filename,
 } from "../../../util/utils";
 import Bagpipe from "../../Bagpipe/bagpipe";
 import config from '../../../util/config'
@@ -296,7 +296,7 @@ class PassVehAll extends Component {
 
                                 const zipFullPath = that.props.global.savePath + config.sep + taskName;
 
-                                const newPath = taskName.replace('.zip',"");
+                                const newPath = rootPath.replace(basename(rootPath),filename(taskName));
                                 // 重命名
                                 fse.renameSync(rootPath, newPath)
                                 // 生成压缩包

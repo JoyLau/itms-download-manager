@@ -12,7 +12,7 @@ import {
     zip,
     updateNotification,
     closeNotification,
-    waitMoment, formatDate_,
+    waitMoment, formatDate_, basename, filename,
 } from "../../../util/utils";
 import Bagpipe from "../../Bagpipe/bagpipe";
 import config from '../../../util/config'
@@ -31,6 +31,7 @@ class IllegalVehSelect extends Component {
 
     state = {
         finishCount: 0,
+        finishSize: 0,
         job: {
             item: [], // 资源项
             protocolData: {}, // 协议传输数据
@@ -234,15 +235,15 @@ class IllegalVehSelect extends Component {
                     that.state.finishCount++
 
                     // 当前任务目录文件数
-                    let finishCount = fs.readdirSync(path).filter(value => fs.statSync(path + config.sep + value).size > 0).length
+                    let finishCount = that.state.finishCount
+
+                    // 本文件大小
+                    const fileSize = fs.statSync(filePath).size;
 
                     // 当前目录大小
-                    let finishSize = 0;
+                    let finishSize = that.state.finishSize + fileSize;
 
-                    fs.readdirSync(path).forEach(value => {
-                        finishSize = finishSize + fs.statSync(path + config.sep + value).size
-                    })
-
+                    that.state.finishSize = finishSize;
 
                     // 更新当前任务
                     that.props.jobProcess.process = {
@@ -261,7 +262,7 @@ class IllegalVehSelect extends Component {
 
                         const zipFullPath = that.props.global.savePath + config.sep + taskName;
 
-                        const newPath = taskName.replace('.zip',"");
+                        const newPath = path.replace(basename(path),filename(taskName));
                         // 重命名
                         fse.renameSync(path, newPath)
                         // 生成压缩包
@@ -413,6 +414,7 @@ class IllegalVehSelect extends Component {
 
         this.setState({
             finishCount: 0,
+            finishSize: 0,
             job: {
                 item: [], // 资源项
                 protocolData: {}, // 协议传输数据
