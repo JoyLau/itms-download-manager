@@ -1,12 +1,8 @@
-import {observable, action, configure} from 'mobx';
+import {observable, action} from 'mobx';
 import {getStorage,setStorage} from "../util/utils";
 import config from '../util/config'
 
 const os = window.require('os')
-
-// configure({
-//     enforceActions: 'always'
-// });
 
 /**
  * 全局配置

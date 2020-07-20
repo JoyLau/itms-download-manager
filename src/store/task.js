@@ -1,9 +1,10 @@
-import {observable, action, configure,autorun,reaction, toJS} from 'mobx';
-import {getStorage, setStorage} from "../util/utils";
+import {observable, action, configure, autorun, toJS} from 'mobx';
+import {saveJobs, addJob,updateJob,allJobs,deleteJob} from '../util/dbUtils'
 
-// configure({
-//     enforceActions: 'always'
-// });
+configure({
+    enforceActions: 'always'
+});
+
 /**
  * 任务进度配置
  */
@@ -17,53 +18,52 @@ class Task {
     @observable
     jobs = []
 
-    change = autorun(
-        () => {
-            console.info("autorun")
-        }
-    )
-
-    saveJobs() {
-        setStorage("jobs",this.jobs).then(()=>{
-            console.info("jobs 保存完成!")
-        })
+    async saveJobs() {
+        saveJobs(toJS(this.jobs), function () {})
     }
 
-    @action
     initJobs() {
-        if (getStorage('jobs')) {
-            this.jobs = getStorage('jobs')
-        }
+        const that = this
+        allJobs(function (array) {
+            if (array.length !== 0) {
+                that.setJobs(array)
+            }
+        });
     }
 
-    getJobs(){
+    getJobs() {
         return this.jobs
     }
 
-    selectById(jobId){
+    selectById(jobId) {
         return this.getJobs().find(value => value.id === jobId)
     }
 
-    selectValueById(jobId, key){
+    selectValueById(jobId, key) {
         return this.selectById(jobId)[key]
+    }
+
+    @action
+    setJobs(jobs) {
+        this.jobs = jobs
     }
 
     @action
     addJob(job) {
         //根据状态决定前面插入还是后面插入
         job.state === 'active' ? this.jobs.unshift(job) : this.jobs.push(job)
-        this.saveJobs()
+        addJob(job,function () {})
     }
 
     @action
     updateStateJob(jobId, state) {
-        this.updateJob(jobId,'state',state);
+        this.updateJob(jobId, 'state', state);
     }
 
     @action
     updateJob(jobId, key, obj) {
         this.jobs[this.jobs.findIndex(job => job.id === jobId)][key] = obj
-        this.saveJobs()
+        updateJob(jobId, key, obj,function () {})
     }
 
     @action
@@ -72,7 +72,7 @@ class Task {
         // 如果下标不存在则会删除最后一个元素, 这里要判断下
         if (index > -1) {
             this.jobs.splice(index, 1);
-            this.saveJobs()
+            deleteJob(jobId,function () {})
         }
 
     }

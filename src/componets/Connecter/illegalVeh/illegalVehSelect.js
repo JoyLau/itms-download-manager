@@ -12,50 +12,51 @@ import {
     zip,
     updateNotification,
     closeNotification,
-    waitMoment, formatDate_, basename, filename,
+    waitMoment, formatDate_, basename, filename, formatDate,
 } from "../../../util/utils";
 import Bagpipe from "../../Bagpipe/bagpipe";
 import config from '../../../util/config'
 import axios from "axios";
 import {toJS} from "mobx";
 import {tmpdir} from '../../../util/utils'
+import {allMetaData, deleteMetaData, saveAllMetaData} from "../../../util/dbUtils";
 
 
 const fs = window.require('fs');
 const fse = window.require('fs-extra');
 const ExcelJS = window.require('exceljs')
 
-@inject('global', "task", 'sysCode','jobProcess')
+@inject('global', "task",'jobProcess')
 @observer
 class IllegalVehSelect extends Component {
 
     state = {
-        finishCount: 0,
-        finishSize: 0,
-        job: {
-            item: [], // 资源项
-            protocolData: {}, // 协议传输数据
-        }
     }
-
-    downloadBagpipe = new Bagpipe(this.props.global.maxJobs, {});
 
     componentDidMount() {
         eventBus.on('illegalVeh-select', this.processSelectData)
 
-        eventBus.on('pause', () => this.downloadBagpipe.pause())
+        eventBus.on('pause', (info) => this.state[info.taskId].downloadBagpipe.pause())
 
-        eventBus.on('resume', () => this.downloadBagpipe.resume())
+        eventBus.on('resume', (info) => this.state[info.taskId].downloadBagpipe.resume())
 
         eventBus.on('stop', (info) => {
-            this.downloadBagpipe.stop()
-            this.saveAndReset(info.taskId);
+            if (this.state[info.taskId]) {
+                this.state[info.taskId].downloadBagpipe.stop()
+                this.saveAndReset(info.taskId);
+            }
+        })
+
+        // 激活一个等待的任务
+        eventBus.on('illegalVeh-select-waiting-to-active',(job) => {
+            console.info("收到激活等待任务[违法导出-选择任务]信息:",job);
+            this.process(job)
         })
     }
 
 
     // 导出选中数据
-    processSelectData = async (data) => {
+    processSelectData = (data) => {
         let that = this;
         console.info("监听到 [违法导出] - [选择任务] ...")
 
@@ -68,8 +69,7 @@ class IllegalVehSelect extends Component {
         })
 
         try {
-            await that.addJob(data)
-
+            that.addJob(data)
         } catch (e) {
             console.error(e)
             message.error('任务创建失败, 请检查参数及接口是否可用!');
@@ -82,7 +82,9 @@ class IllegalVehSelect extends Component {
     /**
      * 添加任务
      */
-    addJob = async (protocolData) => {
+    addJob = (protocolData) => {
+        const that = this;
+
         // 任务名称
         const taskName = "[违法数据_选择导出]"
             + protocolData.extra.searchData.currentUserName
@@ -98,47 +100,80 @@ class IllegalVehSelect extends Component {
             remainingTime: ''
         }
 
-        this.props.jobProcess.process = process;
+        this.props.jobProcess.updateProcess(protocolData.id,process)
 
         const job = {
             id: protocolData.id, // id
             name: taskName,
+            creatTime: formatDate(new Date().getTime()),
+            type: protocolData.extra.name + '-' + protocolData.extra.type,
             avatar: '违法/选择',
             url: protocolData.extra.downloadUrl, // 下载地址
-            state: this.props.task.getJobs().filter(item => item.state === 'active').length > 0 ? 'waiting' : 'active', // 任务状态, 如果当前有正在下载的任务, 则将任务置为等待中
+            state: this.props.task.getJobs().filter(item => item.state === 'active').length >= this.props.global.maxTasks ? 'waiting' : 'active', // 任务状态, 如果当前有正在下载的任务, 则将任务置为等待中
             process: process,
             isNew: true,
+            // protocolData: protocolData.extra.searchData, // 协议传输数据
         }
 
         //数据存放
-        this.setState({
+        this.state[job.id] = {
+            finishCount: 0,
+            finishSize: 0,
             job: {
                 item: protocolData.data, // 资源项
-                protocolData: protocolData, // 协议传输数据
-            }
+            },
+            downloadBagpipe: new Bagpipe(this.props.global.maxJobs, {}) // 任务单独分配线程
+        }
+
+        updateNotification(notification, {
+            key: job.id,
+            message: '资源准备中,请稍等',
+            description: '数据缓存中...',
         })
 
-        // 等一会,否则太快看不到提示
-        await waitMoment(2000)
-        closeNotification(notification, protocolData.id)
-
-        // 添加任务
-        this.props.task.addJob(job)
-        // 开始处理
-        this.process()
-
+        // 在此最好等数据存储完毕在进行下一步操作
+        // 否则在此步骤关闭软件将导致不可控的问题
+        saveAllMetaData(protocolData.data,job.id,async function () {
+            // 等一会,否则太快看不到提示
+            await waitMoment(2000)
+            closeNotification(notification, protocolData.id)
+            // 添加任务
+            that.props.task.addJob(job)
+            // 开始处理
+            that.process(job)
+        })
     }
 
 
-    process = () => {
-        const activeTask = toJS(this.props.task.getJobs().filter(item => item.state === 'active')[0])
+    process = job => {
+        const that = this;
+        if (job.state !== 'active') {
+            return;
+        }
+        const jobId = job.id;
+        if (!this.state[jobId]){
+            updateNotification(notification, {
+                key: jobId,
+                message: '资源准备中,请稍等',
+                description: '数据读取中...',
+            })
 
+            // 获取任务的元数据
+            allMetaData(jobId,function (data) {
+                that.state[jobId] = {
+                    finishCount: 0,
+                    finishSize: 0,
+                    job: {
+                        item: data, // 资源项
+                    },
+                    downloadBagpipe: new Bagpipe(that.props.global.maxJobs, {}) // 任务单独分配线程
+                }
+            })
+        }
         // 存放的值再赋值进去
-        activeTask.item = this.state.job.item;
-        activeTask.protocolData = this.state.job.protocolData;
-        console.info("active 任务信息:", activeTask)
-
-        this.downloadTask(activeTask)
+        job.item = this.state[jobId].job.item;
+        console.info("active 任务信息:", job)
+        this.downloadTask(job)
     }
 
     downloadTask = (activeTask) => {
@@ -179,8 +214,7 @@ class IllegalVehSelect extends Component {
 
             const nowTime = new Date().getTime();
             task.forEach((item, index) => {
-                this.downloadBagpipe.push(that.download, index, item, task.length, nowTime, function () {
-                });
+                this.state[activeTask.id].downloadBagpipe.push(that.download, index, item, task.length, nowTime, function () {});
             })
         } catch (e) {
             console.error(e)
@@ -226,24 +260,22 @@ class IllegalVehSelect extends Component {
                     console.info(err)
                     // 更改任务状态为 error
                     that.props.task.updateStateJob(taskId, "error")
-
                 })
                 .on('end', async function () {
-                    that.state.finishCount++
+                    that.state[taskId].finishCount++
 
-                    // 当前任务目录文件数
-                    let finishCount = that.state.finishCount
+                    // 当前任务已下载完成的文件数
+                    let finishCount = that.state[taskId].finishCount
 
                     // 本文件大小
                     const fileSize = fs.statSync(filePath).size;
 
-                    // 当前目录大小
-                    let finishSize = that.state.finishSize + fileSize;
+                    // 当前任务已下载的文件大小
+                    let finishSize = that.state[taskId].finishSize + fileSize;
 
-                    that.state.finishSize = finishSize;
+                    that.state[taskId].finishSize = finishSize;
 
-                    // 更新当前任务
-                    that.props.jobProcess.process = {
+                    const process = {
                         total: total,
                         finishCount: finishCount,
                         percent: Math.round(finishCount * 100 / total),
@@ -252,10 +284,13 @@ class IllegalVehSelect extends Component {
                         remainingTime: ((new Date().getTime() - startTime) / finishCount) * (total - finishCount) / 1000
                     }
 
+                    // 更新当前任务进度
+                    that.props.jobProcess.updateProcess(taskId,process)
+
                     // 如果下载完成
-                    if (that.state.finishCount === total) {
+                    if (that.state[taskId].finishCount === total) {
                         // 生成 excel
-                        await that.creatExcel(that.state.job.item, path);
+                        await that.creatExcel(taskId,that.state[taskId].job.item, path);
 
                         const zipFullPath = that.props.global.savePath + config.sep + taskName;
 
@@ -274,9 +309,6 @@ class IllegalVehSelect extends Component {
                         // 保存路径
                         that.props.task.updateJob(taskId, "localPath",zipFullPath);
                         that.props.task.updateStateJob(taskId, "complete")
-
-                        // 更新导出状态
-                        that.updateIllegalVehState(that.state.job.protocolData,that.state.job.item);
 
                         // 记录并且重置所使用的状态
                         that.saveAndReset(taskId)
@@ -297,8 +329,8 @@ class IllegalVehSelect extends Component {
     /**
      * 创建 Excel
      */
-    creatExcel = async (data, path) => {
-        this.props.jobProcess.process.creatingExcel = true;
+    creatExcel = async (taskId,data, path) => {
+        this.props.jobProcess.updateProcessItem(taskId,'creatingExcel',true)
         const workbook = new ExcelJS.Workbook();
         const sheet = workbook.addWorksheet('Sheet-1');
 
@@ -407,18 +439,20 @@ class IllegalVehSelect extends Component {
     }
 
     saveAndReset = (jobId) => {
-        this.props.task.updateJob(jobId,'process',this.props.jobProcess.process);
+        // 更新当前的任务进度
+        this.props.task.updateJob(jobId,'process',toJS(this.props.jobProcess.process[jobId]));
 
-        this.setState({
-            finishCount: 0,
-            finishSize: 0,
-            job: {
-                item: [], // 资源项
-                protocolData: {}, // 协议传输数据
-            }
-        })
+        // 删除当前任务的记录信息
+        delete this.state[jobId]
 
-        this.props.jobProcess.process = {}
+        // 删除进度信息
+        this.props.jobProcess.deleteProcess(jobId)
+
+        // 删除任务元数据信息
+        deleteMetaData(jobId)
+
+        // 发出任务下载完成通知
+        eventBus.emit('job-downloaded',jobId)
     }
 
     render() {

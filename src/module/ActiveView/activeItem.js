@@ -1,8 +1,8 @@
 import React from 'react'
 import {Avatar, Divider, List, Progress} from 'antd'
-import {getFileExt, bytesToSize,formatTime} from '../../util/utils'
+import {bytesToSize,formatTime} from '../../util/utils'
 import {inject, observer} from "mobx-react";
-
+import {ExclamationCircleOutlined,ClockCircleOutlined,PauseCircleOutlined} from "@ant-design/icons";
 
 
 @inject('task','global')
@@ -51,13 +51,13 @@ class ActiveItem extends React.Component {
                     <div style={{width: 170}}>
                         <Progress percent={item.process.percent} showInfo={false} status={item.state === 'error' ? "exception" : 'normal'}/>
                         <div style={{display: 'flex', justifyContent: 'space-between'}}>
-                            <span>{item.process.remainingTime !== 0 ? formatTime(item.process.remainingTime) : ''}</span>
-                            <span>{Number(item.process.percent) === 100 ? '100' : item.process.percent}%</span>
+                            <span>{formatTime(item.process.remainingTime)}</span>
+                            <span>{item.process.percent}%</span>
                         </div>
                     </div>
-                    {item.state === 'waiting' ? <span style={{color:'orange'}}>等待中</span> : null}
-                    {item.state === 'error' ? <span style={{color:'red'}}>下载出错</span> : null}
-                    {item.state === 'paused' ? <span>暂停中</span> : null}
+                    {item.state === 'waiting' ? <span style={{color:'orange'}}><ClockCircleOutlined /> 等待中</span> : null}
+                    {item.state === 'error' ? <span style={{color:'red'}}><ExclamationCircleOutlined /> 下载出错</span> : null}
+                    {item.state === 'paused' ? <span><PauseCircleOutlined /> 暂停中</span> : null}
                 </div>
 
             </List.Item>

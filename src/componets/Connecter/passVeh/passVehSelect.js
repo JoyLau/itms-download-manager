@@ -10,7 +10,6 @@ import request from "request";
 import {
     eventBus,
     md5Sign,
-    getCodeName,
     formatDate,
     zip,
     updateNotification,
@@ -18,41 +17,44 @@ import {
     waitMoment,
     formatDate_, basename, filename,
 } from "../../../util/utils";
+import {getCodeName} from '../../../util/dbUtils'
 import Bagpipe from "../../Bagpipe/bagpipe";
 import config from '../../../util/config'
-import {toJS} from "mobx";
 import {tmpdir} from '../../../util/utils'
+import {updateSysCode} from '../common'
+import {toJS} from "mobx";
+import {saveAllMetaData,deleteMetaData,allMetaData} from '../../../util/dbUtils'
 
 
 const fs = window.require('fs');
 const fse = window.require('fs-extra');
 const ExcelJS = window.require('exceljs')
 
-@inject('global', "task", 'sysCode','jobProcess')
+@inject('global', "task",'jobProcess')
 @observer
 class PassVehSelect extends Component {
 
     state = {
-        finishCount: 0,
-        finishSize: 0,
-        job: {
-            item: [], // 资源项
-            protocolData: {}, // 协议传输数据
-        }
     }
-
-    downloadBagpipe = new Bagpipe(this.props.global.maxJobs, {});
 
     componentDidMount() {
         eventBus.on('passVeh-select', this.processSelectData)
 
-        eventBus.on('pause', () => this.downloadBagpipe.pause())
+        eventBus.on('pause', (info) => this.state[info.taskId].downloadBagpipe.pause())
 
-        eventBus.on('resume', () => this.downloadBagpipe.resume())
+        eventBus.on('resume', (info) => this.state[info.taskId].downloadBagpipe.resume())
 
         eventBus.on('stop', (info) => {
-            this.downloadBagpipe.stop()
-            this.saveAndReset(info.taskId);
+            if (this.state[info.taskId]) {
+                this.state[info.taskId].downloadBagpipe.stop()
+                this.saveAndReset(info.taskId);
+            }
+        })
+
+        // 激活一个等待的任务
+        eventBus.on('passVeh-select-waiting-to-active',(job) => {
+            console.info("收到激活等待任务[过车导出-选择任务]信息:",job);
+            this.process(job)
         })
     }
 
@@ -76,7 +78,7 @@ class PassVehSelect extends Component {
                     message: '资源准备中,请稍等',
                     description: '正在请求服务器字典数据...',
                 })
-                await this.updateSysCode(data.extra.sysCode)
+                await updateSysCode(data.extra.sysCode)
             }
 
 
@@ -109,30 +111,12 @@ class PassVehSelect extends Component {
     }
 
 
-
-    /**
-     * 需要字典表的数据,更新本地字典
-     */
-    updateSysCode = async (data) => {
-        let that = this;
-        await axios({
-            method: data.method,
-            url: data.url,
-            params: {
-                codeTypesString: data.params.codeTypesString
-            },
-        })
-            .then(function (response) {
-                Object.keys(response.data).forEach(key => {
-                    that.props.sysCode.updateSysCodes(key, response.data[key])
-                })
-            })
-    }
-
     /**
      * 添加任务
      */
-    addJob = async (protocolData, resultData) => {
+    addJob = (protocolData, resultData) => {
+        const that = this;
+
         // 任务名称
         const taskName = "[过车数据_选择导出]"
             + protocolData.extra.searchData.currentUserName
@@ -148,46 +132,82 @@ class PassVehSelect extends Component {
             remainingTime: ''
         }
 
-        this.props.jobProcess.process = process;
+        this.props.jobProcess.updateProcess(protocolData.id,process)
 
         const job = {
             id: protocolData.id, // id
             name: taskName,
+            creatTime: formatDate(new Date().getTime()),
+            type: protocolData.extra.name + '-' + protocolData.extra.type,
             avatar: '过车/选择',
             url: protocolData.extra.downloadUrl, // 下载地址
-            state: this.props.task.getJobs().filter(item => item.state === 'active').length > 0 ? 'waiting' : 'active', // 任务状态, 如果当前有正在下载的任务, 则将任务置为等待中
+            state: this.props.task.getJobs().filter(item => item.state === 'active').length >= this.props.global.maxTasks ? 'waiting' : 'active', // 任务状态, 如果当前有正在下载的任务, 则将任务置为等待中
             process: process,
             isNew: true,
+            // protocolData: protocolData.extra.searchData, // 协议传输数据
         }
 
         //数据存放
-        this.setState({
+        this.state[job.id] = {
+            finishCount: 0,
+            finishSize: 0,
             job: {
                 item: resultData, // 资源项
-                protocolData: protocolData.extra.searchData, // 协议传输数据
-            }
+            },
+            downloadBagpipe: new Bagpipe(this.props.global.maxJobs, {}) // 任务单独分配线程
+        }
+
+        updateNotification(notification, {
+            key: job.id,
+            message: '资源准备中,请稍等',
+            description: '数据缓存中...',
         })
 
-        // 等一会,否则太快看不到提示
-        await waitMoment(2000)
-        closeNotification(notification, protocolData.id)
-
-        // 添加任务
-        this.props.task.addJob(job)
-        // 开始处理
-        this.process()
-
+        // 在此最好等数据存储完毕在进行下一步操作
+        // 否则在此步骤关闭软件将导致不可控的问题
+        saveAllMetaData(resultData,job.id,async function () {
+            // 等一会,否则太快看不到提示
+            await waitMoment(2000)
+            closeNotification(notification, protocolData.id)
+            // 添加任务
+            that.props.task.addJob(job)
+            // 开始处理
+            that.process(job)
+        })
     }
 
 
-    process = () => {
-        const activeTask = toJS(this.props.task.getJobs().filter(item => item.state === 'active')[0])
-        // 存放的值再赋值进去
-        activeTask.item = this.state.job.item;
-        activeTask.protocolData = this.state.job.protocolData;
-        console.info("active 任务信息:", activeTask)
+    process = job => {
+        const that = this;
+        if (job.state !== 'active') {
+            return;
+        }
+        const jobId = job.id;
+        // 判断元数据是否存在, 如果不存在,则需要从缓存中读取
+        // 不存在的原因可能是软件被关闭了,导致任务中断
+        if (!this.state[jobId]){
+            updateNotification(notification, {
+                key: jobId,
+                message: '资源准备中,请稍等',
+                description: '数据读取中...',
+            })
 
-        this.downloadTask(activeTask)
+            // 获取任务的元数据
+            allMetaData(jobId,function (data) {
+                that.state[jobId] = {
+                    finishCount: 0,
+                    finishSize: 0,
+                    job: {
+                        item: data, // 资源项
+                    },
+                    downloadBagpipe: new Bagpipe(that.props.global.maxJobs, {}) // 任务单独分配线程
+                }
+            })
+        }
+        // 存放的值再赋值进去
+        job.item = this.state[jobId].job.item;
+        console.info("active 任务信息:", job)
+        this.downloadTask(job)
     }
 
     downloadTask = (activeTask) => {
@@ -228,8 +248,7 @@ class PassVehSelect extends Component {
 
             const nowTime = new Date().getTime();
             task.forEach((item, index) => {
-                this.downloadBagpipe.push(that.download, index, item, task.length, nowTime, function () {
-                });
+                this.state[activeTask.id].downloadBagpipe.push(that.download, index, item, task.length, nowTime, function () {});
             })
         } catch (e) {
             console.error(e)
@@ -275,23 +294,22 @@ class PassVehSelect extends Component {
                     console.info(err)
                     // 更改任务状态为 error
                     that.props.task.updateStateJob(taskId, "error")
-
                 })
                 .on('end', async function () {
-                    that.state.finishCount++
+                    that.state[taskId].finishCount++
 
-                    // 当前任务目录文件数
-                    let finishCount = that.state.finishCount
+                    // 当前任务已下载完成的文件数
+                    let finishCount = that.state[taskId].finishCount
 
                     // 本文件大小
                     const fileSize = fs.statSync(filePath).size;
 
-                    // 当前目录大小
-                    let finishSize = that.state.finishSize + fileSize;
+                    //  当前任务已下载的文件大小
+                    let finishSize = that.state[taskId].finishSize + fileSize;
 
-                    that.state.finishSize = finishSize;
+                    that.state[taskId].finishSize = finishSize;
 
-                    that.props.jobProcess.process = {
+                    const process = {
                         total: total,
                         finishCount: finishCount,
                         percent: Math.round(finishCount * 100 / total),
@@ -300,11 +318,13 @@ class PassVehSelect extends Component {
                         remainingTime: ((new Date().getTime() - startTime) / finishCount) * (total - finishCount) / 1000
                     }
 
+                    // 更新当前任务进度
+                    that.props.jobProcess.updateProcess(taskId,process)
 
                     // 如果下载完成
-                    if (total === that.state.finishCount) {
+                    if (total === that.state[taskId].finishCount) {
                         // 生成 excel
-                        await that.creatExcel(that.state.job.item, path);
+                        await that.creatExcel(taskId,that.state[taskId].job.item, path);
 
                         const zipFullPath = that.props.global.savePath + config.sep + taskName;
                         const newPath = path.replace(basename(path),filename(taskName));
@@ -342,8 +362,8 @@ class PassVehSelect extends Component {
     /**
      * 创建 Excel
      */
-    creatExcel = async (data, path) => {
-        this.props.jobProcess.process.creatingExcel = true;
+    creatExcel = async (taskId,data, path) => {
+        this.props.jobProcess.updateProcessItem(taskId,'creatingExcel',true)
         const workbook = new ExcelJS.Workbook();
         const sheet = workbook.addWorksheet('Sheet-1');
 
@@ -448,18 +468,20 @@ class PassVehSelect extends Component {
     }
 
     saveAndReset = (jobId) => {
-        this.props.task.updateJob(jobId,'process',this.props.jobProcess.process);
+        // 更新当前的任务进度
+        this.props.task.updateJob(jobId,'process',toJS(this.props.jobProcess.process[jobId]));
 
-        this.setState({
-            finishCount: 0,
-            finishSize: 0,
-            job: {
-                item: [], // 资源项
-                protocolData: {}, // 协议传输数据
-            }
-        })
+        // 删除当前任务的记录信息
+        delete this.state[jobId]
 
-        this.props.jobProcess.process = {}
+        // 删除进度信息
+        this.props.jobProcess.deleteProcess(jobId)
+
+        // 删除任务元数据信息
+        deleteMetaData(jobId)
+
+        // 发出任务下载完成通知
+        eventBus.emit('job-downloaded',jobId)
     }
 
 

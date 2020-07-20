@@ -24,6 +24,11 @@ class ActiveView extends Component {
         visible: false
     }
 
+    componentDidMount() {
+        // 收到任务下载完毕的通知
+        eventBus.on('job-downloaded',() => {this.changeMenuState();})
+    }
+
     onItemClick = item => {
         this.setState({
             selectedItem: item,
@@ -31,6 +36,19 @@ class ActiveView extends Component {
     }
 
     renderItem(item) {
+        // 任务可能异常了
+        if (!this.props.jobProcess.process[item.id]){
+            const process = {
+                total: 0,
+                finishCount: 0,
+                percent: 0,
+                finishSize: 0,
+                remainingTime: ''
+            }
+            this.props.jobProcess.updateProcess(item.id,process)
+            // 更改任务状态为 error
+            this.props.task.updateStateJob(item.id, "error")
+        }
         if (item.state === 'active') {
             return (
                 <ProcessItem
@@ -76,7 +94,7 @@ class ActiveView extends Component {
         // 发出通知
         eventBus.emit('pause',{taskId:this.state.selectedItem.id})
         // 保存当前进度
-        this.props.task.updateJob(this.state.selectedItem.id,'process',this.props.jobProcess.process)
+        this.props.task.updateJob(this.state.selectedItem.id,'process',this.props.jobProcess.process[this.state.selectedItem.id])
         // 更新状态
         this.props.task.updateStateJob(this.state.selectedItem.id, 'paused')
     }

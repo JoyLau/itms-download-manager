@@ -85,7 +85,7 @@ class CompleteItem extends React.Component {
                         <Progress percent={item.process.percent} showInfo={false} strokeColor={exists ? '#52c41a' : '#F5F5F5'}/>
                         <div style={{display: 'flex', justifyContent: 'space-between'}}>
                             <span>{''}</span>
-                            <Text disabled = {!exists}>{Number(item.process.percent) === 100 ? '100' : item.process.percent}%</Text>
+                            <Text disabled = {!exists}>{item.process.percent}%</Text>
                         </div>
                     </div>
                     {

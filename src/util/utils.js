@@ -1,6 +1,5 @@
 import React from 'react'
 import {LoadingOutlined} from "@ant-design/icons";
-import Dexie from "dexie";
 import config from "./config";
 
 const path = window.require('path')
@@ -18,11 +17,7 @@ const compressing = window.require('compressing');
 
 const fse = window.require('fs-extra');
 
-const db = new Dexie("metaDB");
-db.version(1).stores({meta: 'taskId'});
-
-export const metaDB = db.table('meta')
-
+export const eventBus = new EventEmitter();
 
 export const tmpdir = os.tmpdir() + config.sep + config.PROTOCOL;
 
@@ -83,9 +78,6 @@ export function getSessionStorage(key) {
 export function setSessionStorage(key, value) {
     sessionStorage.setItem(key, JSON.stringify(value))
 }
-
-export const eventBus = new EventEmitter();
-
 
 export function getFileExt(file) {
     if (!file || file.indexOf('.') === -1) return '';
@@ -170,17 +162,6 @@ export function formatDate_(time) {
     return formatDate(time).replace(/ /g, "_").replace(/:/g, "-");
 }
 
-export function getCodeName(type, code) {
-    const sysCodes = getStorage('sysCodes');
-    if (sysCodes) {
-        const sysCode = sysCodes[type].find(val => val.value === code)
-        return sysCode ? sysCode.text : ''
-    } else {
-        return ''
-    }
-}
-
-
 /**
  * 将浏览器地址栏信息转化为对象
  * @param query
@@ -206,8 +187,11 @@ export async function zip(source, dest, clean) {
     await compressing.zip.compressDir(source, dest)
         .then(() => {
             if (clean) {
-                fse.removeSync(source)
+                fse.remove(source)
             }
+        })
+        .catch(error => {
+            console.error(error)
         })
 }
 
@@ -218,8 +202,11 @@ export async function unzip(source, dest, clean) {
     await compressing.zip.uncompress(source, dest)
         .then(() => {
             if (clean) {
-                fse.removeSync(source)
+                fse.remove(source)
             }
+        })
+        .catch(error => {
+            console.error(error)
         })
 }
 

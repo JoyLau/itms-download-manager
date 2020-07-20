@@ -20,7 +20,8 @@ const fse = window.require('fs-extra');
 class SettingView extends React.Component {
 
     state = {
-        cacheSize: 0
+        cacheSize: 0,
+        disableClearCache: false,
     }
 
     componentDidMount() {
@@ -67,8 +68,15 @@ class SettingView extends React.Component {
             message.warning("当前有任务正在下载中, 请稍后再试!")
             return;
         }
-        fse.emptyDirSync(tmpdir);
-        this.collectCache();
+        this.setState({
+            disableClearCache: true,
+        })
+        fse.emptyDir(tmpdir).then(value => {
+            this.setState({
+                disableClearCache: false,
+            })
+            this.collectCache();
+        })
     }
 
     render() {
@@ -174,7 +182,7 @@ class SettingView extends React.Component {
                         <Col span={6}>磁盘缓存</Col>
                         <Col span={18}>
                             <Row style={colRowStyle}>
-                                <Space><span>{bytesToSize(this.state.cacheSize)}</span> <Button size={'small'} type="primary" onClick={this.clearCache}>清除缓存</Button></Space>
+                                <Space><span>{bytesToSize(this.state.cacheSize)}</span> <Button size={'small'} type="primary" onClick={this.clearCache} loading={this.state.disableClearCache}>清除缓存</Button></Space>
                             </Row>
                         </Col>
                     </Row>

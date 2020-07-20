@@ -10,7 +10,6 @@ import request from "request";
 import {
     eventBus,
     md5Sign,
-    getCodeName,
     formatDate,
     zip,
     updateNotification,
@@ -20,37 +19,44 @@ import {
     formatTime, unzip,
     formatDate_, basename, filename,
 } from "../../../util/utils";
+import {allMetaData, deleteMetaData, getCodeName, saveAllMetaData} from '../../../util/dbUtils'
 import Bagpipe from "../../Bagpipe/bagpipe";
 import config from '../../../util/config'
 import {toJS} from "mobx";
 import {tmpdir} from '../../../util/utils'
-
+import {updateSysCode} from '../common'
+import _ from "lodash";
 
 const fs = window.require('fs');
 const fse = window.require('fs-extra');
 const ExcelJS = window.require('exceljs')
 
-@inject('global', "task", 'sysCode','jobProcess')
+@inject('global', "task",'jobProcess')
 @observer
 class PassVehAll extends Component {
 
     state = {
-        finishCount: 0,
-        finishSize: 0,
     }
 
-    downloadBagpipe = new Bagpipe(this.props.global.maxJobs, {});
 
     componentDidMount() {
         eventBus.on('passVeh-all', this.processAllData)
 
-        eventBus.on('pause', () => this.downloadBagpipe.pause())
+        eventBus.on('pause', (info) => this.state[info.taskId].downloadBagpipe.pause())
 
-        eventBus.on('resume', () => this.downloadBagpipe.resume())
+        eventBus.on('resume', (info) => this.state[info.taskId].downloadBagpipe.resume())
 
         eventBus.on('stop', (info) => {
-            this.downloadBagpipe.stop()
-            this.saveAndReset(info.taskId);
+            if (this.state[info.taskId]) {
+                this.state[info.taskId].downloadBagpipe.stop()
+                this.saveAndReset(info.taskId);
+            }
+        })
+
+        // 激活一个等待的任务
+        eventBus.on('passVeh-all-waiting-to-active',(job) => {
+            console.info("收到激活等待任务[过车导出-全部任务]信息:",job);
+            this.process(job)
         })
     }
 
@@ -82,7 +88,7 @@ class PassVehAll extends Component {
                     message: '资源准备中,请稍等',
                     description: '正在请求服务器字典数据...',
                 })
-                await this.updateSysCode(data.extra.sysCode)
+                await updateSysCode(data.extra.sysCode)
             }
 
 
@@ -105,39 +111,24 @@ class PassVehAll extends Component {
             const metaFileFullPath = metaFilePath + config.sep + metaFileName;
 
             //确保路径存在
-            fse.mkdirpSync(metaFilePath)
+            fse.ensureDirSync(metaFilePath)
 
             // 下载数据文件
             progress(request.post(data.url, {form: data.params.inputBean}), {})
                 .on('progress', function (state) {
-                    // The state is an object that looks like this:
-                    // {
-                    //     percent: 0.5,               // Overall percent (between 0 to 1)
-                    //     speed: 554732,              // The download speed in bytes/sec
-                    //     size: {
-                    //         total: 90044871,        // The total payload size in bytes
-                    //         transferred: 27610959   // The transferred payload size in bytes
-                    //     },
-                    //     time: {
-                    //         elapsed: 36.235,        // The total elapsed seconds since the start (3 decimals)
-                    //         remaining: 81.403       // The remaining seconds to finish (3 decimals)
-                    //     }
-                    // }
                     updateNotification(notification, {
                         key: data.id,
                         message: '元数据拉取中,请稍等...',
                         description: <span>
                                     花费时间: {formatTime(state.time.elapsed)}
-                            <Divider type="vertical"/>
-                                    拉取大小: {bytesToSize(state.size.transferred)}
+                                    <Divider type="vertical"/>
+                                    块大小: {bytesToSize(state.size.transferred)}
                                     </span>,
                     })
                 })
                 .on('error', function (err) {
                     console.info(err)
                     message.error("元数据拉取失败!")
-                    // 删除文件
-                    fse.removeSync(metaFileFullPath)
                 })
                 .on('end', async function () {
                     updateNotification(notification, {
@@ -160,13 +151,14 @@ class PassVehAll extends Component {
 
                     const allData = []
 
-                    await fs.readdirSync(metaFilePath).forEach((fileName, index) => {
+                    fs.readdirSync(metaFilePath).forEach((fileName, index) => {
                         const filePath = metaFilePath + config.sep + fileName;
                         //总记录数
-                        bagpipe.push(that.readJSONFile, index, totalFiles, data, fileName, filePath, async function (index, itemData) {
+                        bagpipe.push(that.readJSONFile, index, totalFiles, data, filePath, function (index, itemData) {
                             allData.push(itemData)
+                            // 解析完毕
                             if ((index + 1) === totalFiles) {
-                                await that.bulkProcess(data, allData)
+                                that.bulkProcess(data, allData)
                             }
                         });
                     })
@@ -186,7 +178,7 @@ class PassVehAll extends Component {
     }
 
 
-    readJSONFile = async (index, total, data, fileName, filePath, callback) => {
+    readJSONFile = async (index, total, data, filePath, callback) => {
         updateNotification(notification, {
             key: data.id,
             message: '正在写入缓存,请稍等...',
@@ -206,32 +198,19 @@ class PassVehAll extends Component {
             data: ids,
         })
             .then(async function (response) {
-                callback(index, {
-                    [fileName.replace(".json", "")]: response.data
-                });
+                callback(index, response.data);
             })
     }
 
-    bulkProcess = async (data, allData) => {
+    bulkProcess = (data, allData) => {
         let that = this;
         const taskId = data.id;
 
         updateNotification(notification, {
-            key: data.id,
+            key: taskId,
             message: '资源准备中,请稍等',
             description: '正在转换数据...',
         })
-
-        const totalData = allData.flatMap(value => {
-            const iData = value[Object.keys(value)[0]];
-            iData.forEach(item => {
-                item.taskId = data.id;
-                item.dirName = Object.keys(value)[0];
-                item.downloadUrl = data.extra.downloadUrl;
-            })
-            return iData;
-        })
-        const total = totalData.length
 
         // 任务名称
         const taskName = "[过车数据_全部导出]"
@@ -240,91 +219,124 @@ class PassVehAll extends Component {
             + formatDate_(new Date().getTime())
             + '.zip';
 
+        const totalData = allData.flatMap((value,index) => {
+            value.forEach(item => {
+                item.taskId = taskId;
+                item.taskName = taskName;
+                item.dirName = index;
+                item.downloadUrl = data.extra.downloadUrl;
+            })
+            return value;
+        })
+
         const process = {
-            total: total,
+            total: totalData.length,
             finishCount: 0,
             percent: 0,
             finishSize: 0,
             remainingTime: ''
         };
 
-        this.props.jobProcess.process = process;
+        this.props.jobProcess.updateProcess(taskId,process)
 
         const job = {
             id: taskId, // id
             name: taskName,
+            creatTime: formatDate(new Date().getTime()),
+            type: data.extra.name + '-' + data.extra.type,
             avatar: '违法/全部',
             url: data.extra.downloadUrl, // 下载地址
-            state: this.props.task.getJobs().filter(item => item.state === 'active').length > 0 ? 'waiting' : 'active', // 任务状态, 如果当前有正在下载的任务, 则将任务置为等待中
+            state: this.props.task.getJobs().filter(item => item.state === 'active').length >= this.props.global.maxTasks ? 'waiting' : 'active', // 任务状态, 如果当前有正在下载的任务, 则将任务置为等待中
             process: process,
             isNew: true,
+            // protocolData: data.extra.searchData, // 协议传输数据
         }
 
-        // 等一会,否则太快看不到提示
-        await waitMoment(2000)
-        closeNotification(notification, taskId)
+        //数据存放
+        this.state[job.id] = {
+            finishCount: 0,
+            finishSize: 0,
+            job: {
+                item: totalData, // 资源项
+            },
+            downloadBagpipe: new Bagpipe(this.props.global.maxJobs, {}) // 任务单独分配线程
+        }
 
-        // 添加任务
-        this.props.task.addJob(job)
+        updateNotification(notification, {
+            key: job.id,
+            message: '资源准备中,请稍等',
+            description: '数据缓存中...',
+        })
 
-        const activeTask = toJS(this.props.task.getJobs().filter(item => item.state === 'active')[0])
 
-        console.info("active 任务信息:", activeTask)
-
-        const nowTime = new Date().getTime();
-        totalData.forEach((item,index) => {
-            this.downloadBagpipe.push(that.allDownload, index, nowTime, job, item, total, async function (finish) {
-                // 如果全部完成了
-                if (finish) {
-                    // 删除 metaData 临时文件目录
-                    fse.removeSync(tmpdir + config.sep + taskId + config.sep + "metaData");
-
-                    const bg = new Bagpipe(1, {});
-
-                    const rootPath = tmpdir + config.sep + taskId;
-
-                    allData.forEach((val,index) => {
-                        const key = Object.keys(val)[0];
-                        const iData = val[key];
-
-                        const excelPath = rootPath + config.sep + key;
-
-                        // 生成 excel
-                        bg.push(that.creatExcel, iData, excelPath,async function () {
-                            // 所有 excel 都生成完毕
-                            if (index + 1 === allData.length){
-
-                                const zipFullPath = that.props.global.savePath + config.sep + taskName;
-
-                                const newPath = rootPath.replace(basename(rootPath),filename(taskName));
-                                // 重命名
-                                fse.renameSync(rootPath, newPath)
-                                // 生成压缩包
-                                await zip(newPath, zipFullPath, true)
-
-                                // 播放下载完成提示音和通知
-                                eventBus.emit('start-tips', taskName, zipFullPath)
-
-                                // 更新状态, 等 1 秒
-                                await waitMoment(1000)
-                                // 保存路径
-                                that.props.task.updateJob(taskId, "localPath",zipFullPath);
-                                that.props.task.updateStateJob(taskId, "complete")
-
-                                // 记录并且重置所使用的状态
-                                that.saveAndReset(taskId)
-                            }
-                        })
-                    })
-                }
-            });
+        // 在此最好等数据存储完毕在进行下一步操作
+        // 否则在此步骤关闭软件将导致不可控的问题
+        saveAllMetaData(totalData,job.id,async function () {
+            // 等一会,否则太快看不到提示
+            await waitMoment(2000)
+            closeNotification(notification, taskId)
+            // 添加任务
+            that.props.task.addJob(job)
+            // 开始处理
+            that.process(job)
         })
     }
 
-    allDownload = async (index, startTime,task, item, total, callback) => {
-        let that = this;
+
+    process = (job) => {
+        const that = this;
+        if (job.state !== 'active') {
+            return;
+        }
+        const jobId = job.id;
+
+        if (!this.state[jobId]){
+            updateNotification(notification, {
+                key: jobId,
+                message: '资源准备中,请稍等',
+                description: '元数据读取中...',
+            })
+
+            // 获取任务的元数据
+            allMetaData(jobId,function (data) {
+                that.state[jobId] = {
+                    finishCount: 0,
+                    finishSize: 0,
+                    job: {
+                        item: data, // 资源项
+                    },
+                    downloadBagpipe: new Bagpipe(that.props.global.maxJobs, {}) // 任务单独分配线程
+                }
+            })
+        }
+
+        // 存放的值再赋值进去
+        job.item = this.state[jobId].job.item;
+        console.info("active 任务信息:", job)
+
+        this.downloadTask(job)
+    }
+
+
+    downloadTask = job => {
+        const that = this;
+        const nowTime = new Date().getTime();
+        const total = job.item.length;
+
+        if (total === 0 ) {
+            message.warn("没有资源可供下载!")
+            that.props.task.deleteJob(job.id)
+            return;
+        }
+        job.item.forEach((item,index) => {
+            this.state[job.id].downloadBagpipe.push(that.download, index, nowTime, item, total, async function (finish) {});
+        })
+    }
+
+    download = async (index, startTime, item, total, callback) => {
+        const that = this;
         const taskId = item.taskId;
-        const taskName = task.name;
+        const taskName = item.taskName;
         const parentPathName = item.dirName;
 
         try {
@@ -333,55 +345,35 @@ class PassVehAll extends Component {
             const parentPath = rootPath + config.sep + parentPathName;
 
             // 文件目录不存在则创建目录
-            fse.mkdirpSync(parentPath);
+            fse.ensureDirSync(parentPath);
 
-            const imageUrl = item.image_url_path ? item.image_url_path.split(";")[0] : "";
+            const imageUrl = item.image_url_path ? item.image_url_path.split(";")[0] : "blank_image_url";
             const fileName = item.plate_nbr + "_" + item.device_nbr + "_" + item.snap_nbr + "_" + index + ".jpg";
 
             const fileFullPath = parentPath + config.sep + fileName;
 
-            progress(request(item.downloadUrl + "?imgUrl=" + encodeURIComponent(imageUrl), {
-                // throttle: 2000,                    // Throttle the progress event to 2000ms, defaults to 1000ms
-                // delay: 1000,                       // Only start to emit after 1000ms delay, defaults to 0ms
-                // lengthHeader: 'x-transfer-length'  // Length header to use, defaults to content-length
-            })
+            progress(request(item.downloadUrl + "?imgUrl=" + encodeURIComponent(imageUrl), {})
                 .on('progress', function (state) {
-                    // The state is an object that looks like this:
-                    // {
-                    //     percent: 0.5,               // Overall percent (between 0 to 1)
-                    //     speed: 554732,              // The download speed in bytes/sec
-                    //     size: {
-                    //         total: 90044871,        // The total payload size in bytes
-                    //         transferred: 27610959   // The transferred payload size in bytes
-                    //     },
-                    //     time: {
-                    //         elapsed: 36.235,        // The total elapsed seconds since the start (3 decimals)
-                    //         remaining: 81.403       // The remaining seconds to finish (3 decimals)
-                    //     }
-                    // }
                 })
                 .on('error', function (err) {
                     console.info(err)
                     // 更改任务状态为 error
                     that.props.task.updateStateJob(taskId, "error")
-
                 })
                 .on('end', async function () {
-
+                    that.state[taskId].finishCount++
                     // 当前任务已下载完成的文件数
-                    let finishCount = that.state.finishCount + 1;
-
-                    that.state.finishCount = finishCount;
+                    let finishCount = that.state[taskId].finishCount;
 
                     // 本文件大小
                     const fileSize = fs.statSync(fileFullPath).size;
 
                     // 当前任务已下载的文件大小
-                    let finishSize = that.state.finishSize + fileSize;
+                    let finishSize = that.state[taskId].finishSize + fileSize;
 
-                    that.state.finishSize = finishSize;
+                    that.state[taskId].finishSize = finishSize;
 
-                    that.props.jobProcess.process = {
+                    const process = {
                         total: total,
                         finishCount: finishCount,
                         percent: Math.round(finishCount * 100 / total),
@@ -390,11 +382,50 @@ class PassVehAll extends Component {
                         remainingTime: ((new Date().getTime() - startTime) / finishCount) * (total - finishCount) / 1000
                     }
 
+                    // 更新当前任务进度
+                    that.props.jobProcess.updateProcess(taskId,process)
 
-                    // 如果下载完成
-                    if (total === finishCount) {
-                        //全部完成回调
-                        callback(true)
+                    // 如果下载全部完成
+                    if (total === that.state[taskId].finishCount) {
+                        const rootPath = tmpdir + config.sep + taskId;
+
+                        // 删除 metaData 临时文件目录
+                        fse.removeSync(rootPath + config.sep + "metaData");
+
+                        const bg = new Bagpipe(1, {});
+
+                        // 逐个生成 Excel
+                        // 按每 1000 条进行分割
+                        const bulkData = _.chunk(that.state[taskId].job.item, 10000);
+                        bulkData.forEach((item,index) => {
+                            const excelPath = rootPath + config.sep + index;
+
+                            // 生成 excel
+                            bg.push(that.creatExcel, taskId,item, excelPath,async function () {
+                                // 所有 excel 都生成完毕
+                                if (index + 1 === bulkData.length){
+                                    const zipFullPath = that.props.global.savePath + config.sep + taskName;
+
+                                    const newPath = rootPath.replace(basename(rootPath),filename(taskName));
+                                    // 重命名
+                                    fse.renameSync(rootPath, newPath)
+                                    // 生成压缩包
+                                    await zip(newPath, zipFullPath, true)
+
+                                    // 播放下载完成提示音和通知
+                                    eventBus.emit('start-tips', taskName, zipFullPath)
+
+                                    // 更新状态, 等 1 秒
+                                    await waitMoment(1000)
+                                    // 保存路径
+                                    that.props.task.updateJob(taskId, "localPath",zipFullPath);
+                                    that.props.task.updateStateJob(taskId, "complete")
+
+                                    // 记录并且重置所使用的状态
+                                    that.saveAndReset(taskId)
+                                }
+                            })
+                        })
                     }
 
                     // 异步回调
@@ -436,7 +467,7 @@ class PassVehAll extends Component {
             );
             notification.warning({
                 message: '警告',
-                description: `当前需要导出的数据量为 ${data.extra.total}, 导出超过 10w 的数据量,将严重影响服务器的性能, 是否继续 ??`,
+                description: `当前需要导出的数据量为 ${data.extra.total}, 导出超过 10w 的数据量,可能会影响服务器的性能, 是否继续 ?`,
                 btn,
                 key,
             });
@@ -447,29 +478,10 @@ class PassVehAll extends Component {
 
 
     /**
-     * 需要字典表的数据,更新本地字典
-     */
-    updateSysCode = async (data) => {
-        let that = this;
-        await axios({
-            method: data.method,
-            url: data.url,
-            params: {
-                codeTypesString: data.params.codeTypesString
-            },
-        })
-            .then(function (response) {
-                Object.keys(response.data).forEach(key => {
-                    that.props.sysCode.updateSysCodes(key, response.data[key])
-                })
-            })
-    }
-
-    /**
      * 创建 Excel
      */
-    creatExcel = async (data, path,callback) => {
-        this.props.jobProcess.process.creatingExcel = true;
+    creatExcel = async (taskId,data, path,callback) => {
+        this.props.jobProcess.updateProcessItem(taskId,'creatingExcel',true)
         const workbook = new ExcelJS.Workbook();
         const sheet = workbook.addWorksheet('Sheet-1');
 
@@ -575,14 +587,20 @@ class PassVehAll extends Component {
     }
 
     saveAndReset = (jobId) => {
-        this.props.task.updateJob(jobId,'process',this.props.jobProcess.process);
+        // 更新当前的任务进度
+        this.props.task.updateJob(jobId,'process',toJS(this.props.jobProcess.process[jobId]));
 
-        this.setState({
-            finishCount: 0,
-            finishSize: 0
-        })
+        // 删除当前任务的记录信息
+        delete this.state[jobId]
 
-        this.props.jobProcess.process = {}
+        // 删除进度信息
+        this.props.jobProcess.deleteProcess(jobId)
+
+        // 删除任务元数据信息
+        deleteMetaData(jobId)
+
+        // 发出任务下载完成通知
+        eventBus.emit('job-downloaded',jobId)
     }
 
     render() {

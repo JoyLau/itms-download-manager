@@ -1,6 +1,6 @@
 import React from 'react'
 import {Avatar, Divider, List, Progress} from 'antd'
-import {getFileExt, bytesToSize,formatTime} from '../../util/utils'
+import {bytesToSize,formatTime} from '../../util/utils'
 import {inject, observer} from "mobx-react";
 
 
@@ -42,11 +42,11 @@ class ProcessItem extends React.Component {
                     title={<span>{item.name}</span>}
                     description={
                         <span>
-                            {bytesToSize(this.props.jobProcess.process.finishSize)}
+                            {bytesToSize(this.props.jobProcess.process[item.id].finishSize)}
                             <Divider type="vertical"/>
-                            当前已下载: {this.props.jobProcess.process.finishCount} / 总计: {this.props.jobProcess.process.total}
+                            当前已下载: {this.props.jobProcess.process[item.id].finishCount} / 总计: {this.props.jobProcess.process[item.id].total}
                             {
-                                this.props.jobProcess.process.creatingExcel ?
+                                this.props.jobProcess.process[item.id].creatingExcel ?
                                     <span>
                                         <Divider type="vertical"/>
                                         正在生成 Excel ...
@@ -59,16 +59,16 @@ class ProcessItem extends React.Component {
                 />
                 <div style={content}>
                     <div style={{width: 170}}>
-                        <Progress percent={this.props.jobProcess.process.percent} showInfo={false} strokeColor={{
+                        <Progress percent={this.props.jobProcess.process[item.id].percent} showInfo={false} strokeColor={{
                             '0%': '#108ee9',
                             '100%': '#87d068',
                         }}/>
                         <div style={{display: 'flex', justifyContent: 'space-between'}}>
-                            <span>{this.props.jobProcess.process.remainingTime !== 0 ? formatTime(this.props.jobProcess.process.remainingTime) : ''}</span>
-                            <span>{Number(this.props.jobProcess.process.percent) === 100 ? '100' : this.props.jobProcess.process.percent}%</span>
+                            <span>{formatTime(this.props.jobProcess.process[item.id].remainingTime)}</span>
+                            <span>{this.props.jobProcess.process[item.id].percent}%</span>
                         </div>
                     </div>
-                    {item.state === 'active' ? <span>{bytesToSize(this.props.jobProcess.process.speed)}/s</span> : null}
+                    <span>{bytesToSize(this.props.jobProcess.process[item.id].speed)}/s</span>
                 </div>
 
             </List.Item>
