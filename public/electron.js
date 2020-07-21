@@ -147,20 +147,9 @@ if (!gotTheLock) {
                 // 打开控制台
                 win.webContents.isDevToolsOpened() ? win.webContents.closeDevTools() : win.webContents.openDevTools();
             })
-
             globalShortcut.register('CommandOrControl+Alt+Shift+T', () => {
                 // 打开临时目录
                 shell.showItemInFolder(os.tmpdir() + path.sep + PROTOCOL)
-            })
-
-        })
-        .then(() => {
-            ipcMain.on('setting', (event, arg) => {
-                // 设置是否开机启动
-                app.setLoginItemSettings({
-                    openAtLogin: arg.powerOn
-                })
-                console.log("设置开机启动:",arg.powerOn)
             })
         })
 

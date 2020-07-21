@@ -80,7 +80,7 @@ class Global {
      * @returns {any}
      */
     readStorageOrElse(key, other){
-        return getStorage(key) ? getStorage(key) : other
+        return getStorage(key) !== null ? getStorage(key) : other
     }
 
     @action

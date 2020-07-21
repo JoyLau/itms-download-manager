@@ -3,15 +3,15 @@ import {Layout, Input, Radio, Row, Col, Checkbox, Select, Button, Space, message
 import {FolderOutlined} from '@ant-design/icons';
 import WindowControl from "../../componets/WindowControl";
 import {inject, observer} from "mobx-react";
-import {eventBus,tmpdir,bytesToSize} from "../../util/utils";
+import {eventBus, tmpdir, bytesToSize} from "../../util/utils";
+import {openLogin,listenClipboard,unListenClipboard} from '../../util/settingUtils'
 import {toJS} from "mobx";
 
 const {Header} = Layout;
 const { Option } = Select;
-const {dialog} = window.require('electron').remote;
+const {dialog,app} = window.require('electron').remote;
 
 const os = window.require('os')
-const {ipcRenderer} = window.require('electron')
 const klaw = window.require('klaw')
 const fse = window.require('fs-extra');
 
@@ -56,9 +56,19 @@ class SettingView extends React.Component {
 
     powerOn = (e) => {
         this.props.global.changePowerOn(e.target.checked);
-        // 向主进程发送配置信息
-        ipcRenderer.send("setting",this.props.global)
+        openLogin(app,e.target.checked);
     }
+
+    onClipboard = e => {
+        const check = e.target.checked
+        this.props.global.changeOnClipboard(check)
+        if (check) {
+            listenClipboard();
+        } else {
+            unListenClipboard();
+        }
+    }
+
 
     clearCache = () => {
         if (this.state.cacheSize ===0 ) {
@@ -129,7 +139,7 @@ class SettingView extends React.Component {
                         <Col span={6}>接管设置</Col>
                         <Col span={18}>
                             <Row>
-                                <Checkbox checked={this.props.global.onClipboard} onChange={(e) => {this.props.global.changeOnClipboard(e.target.checked)}}>接管剪切板</Checkbox>
+                                <Checkbox checked={this.props.global.onClipboard} onChange={this.onClipboard}>接管剪切板</Checkbox>
                             </Row>
                         </Col>
                     </Row>
@@ -212,19 +222,19 @@ class SettingView extends React.Component {
                             </Row>
                         </Col>
                     </Row>
-                    <Row gutter={rowGutter}>
-                        <Col span={6}>悬浮窗</Col>
-                        <Col span={18}>
-                            <Row>
-                                <Radio.Group  value={this.props.global.floatWin}
-                                              onChange={(e) => this.props.global.changeFloatWin(e.target.value)}
-                                >
-                                    <Radio value={true}>显示悬浮窗</Radio>
-                                    <Radio value={false}>隐藏悬浮窗</Radio>
-                                </Radio.Group>
-                            </Row>
-                        </Col>
-                    </Row>
+                    {/*<Row gutter={rowGutter}>*/}
+                    {/*    <Col span={6}>悬浮窗</Col>*/}
+                    {/*    <Col span={18}>*/}
+                    {/*        <Row>*/}
+                    {/*            <Radio.Group  value={this.props.global.floatWin}*/}
+                    {/*                          onChange={(e) => this.props.global.changeFloatWin(e.target.value)}*/}
+                    {/*            >*/}
+                    {/*                <Radio value={true}>显示悬浮窗</Radio>*/}
+                    {/*                <Radio value={false}>隐藏悬浮窗</Radio>*/}
+                    {/*            </Radio.Group>*/}
+                    {/*        </Row>*/}
+                    {/*    </Col>*/}
+                    {/*</Row>*/}
                     <Row gutter={rowGutter}>
                         <Col span={6}>压缩设置</Col>
                         <Col span={18}>

@@ -7,15 +7,14 @@ import {inject, observer} from "mobx-react";
 import {CaretRightOutlined, DeleteOutlined, PauseOutlined,PlusOutlined} from "@ant-design/icons";
 import ActiveItem from "./activeItem";
 import ProcessItem from "./processItem";
-import {eventBus} from "../../util/utils";
-import CryptoJS from 'crypto-js';
+import {eventBus,decryptPassphrase} from "../../util/utils";
 import config from "../../util/config";
 
 
 const {Header, Content} = Layout;
 const {TextArea} = Input;
 
-@inject('task','jobProcess')
+@inject('task','jobProcess','global')
 @observer
 class ActiveView extends Component {
 
@@ -26,7 +25,27 @@ class ActiveView extends Component {
 
     componentDidMount() {
         // 收到任务下载完毕的通知
-        eventBus.on('job-downloaded',() => {this.changeMenuState();})
+        eventBus.on('job-downloaded',this.changeMenuState)
+
+        // 收到剪切板新建任务通知
+        eventBus.on('clipboard-task',this.clipboardTask)
+
+    }
+
+    // 为了解决 clipboardTask 设置 state 报错异常
+    // 报错信息:
+    // Warning: Can't perform a React state update on an unmounted component.
+    // This is a no-op, but it indicates a memory leak in your application.
+    // To fix, cancel all subscriptions and asynchronous tasks in the componentWillUnmount method.
+    componentWillUnmount() {
+        this.setState = () => false;
+    }
+
+    clipboardTask = (clipboardText) => {
+        this.setState({
+            visible: true,
+            passphrase: clipboardText
+        })
     }
 
     onItemClick = item => {
@@ -107,27 +126,24 @@ class ActiveView extends Component {
 
     handleCancel = () => {
         this.setState({
-            visible: false
+            visible: false,
+            passphrase: ''
         })
     }
 
     handleOk = () => {
         const passphrase = this.state.passphrase;
         if (passphrase && passphrase !== '') {
-            let originalText = ''
-            try {
-                originalText = CryptoJS.AES.decrypt(passphrase, '').toString(CryptoJS.enc.Utf8);
-            } catch (e) {
-                console.error(e);
-            }
-            console.info("口令解密后的数据:",originalText)
+            const originalText = decryptPassphrase(passphrase);
+            console.info("口令解密后的数据:",originalText);
             if (originalText === '' || originalText.indexOf(config.PROTOCOL) < 0) {
                 message.error("口令错误!")
                 return;
             }
             eventBus.emit('add-task',originalText)
             this.setState({
-                visible: false
+                visible: false,
+                passphrase: ''
             })
         }
     }
@@ -148,6 +164,7 @@ class ActiveView extends Component {
             >
                 <TextArea onChange={(e) => this.setState({passphrase: e.target.value})}
                           onPressEnter={this.handleOk}
+                          value={this.state.passphrase}
                           placeholder={'将复制的口令粘贴到此处即可开始下载'}
                           autoSize={{minRows: 6, maxRows: 20}}/>
                 <div className="ant-modal-footer">

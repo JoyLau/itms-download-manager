@@ -4,6 +4,7 @@ import config from "../../util/config"
 import {message} from 'antd';
 import PassVeh from './passVeh'
 import {eventBus,tmpdir} from "../../util/utils";
+import {listenClipboard,unListenClipboard} from '../../util/settingUtils'
 import Tips from "../Tips";
 import IllegalVeh from "./illegalVeh";
 import axios from "axios";
@@ -34,15 +35,14 @@ class Connecter extends React.Component {
             })
         })
 
-        // 向主进程发送配置信息
-        ipcRenderer.send("setting",this.props.global)
-
         // 确保下载目录是否存在, 不存在则创建他
         fse.ensureDirSync(this.props.global.savePath)
 
         // 确保临时目录存在, 不存在则创建他
         fse.ensureDirSync(tmpdir)
 
+        // 初始化配置
+        this.initSetting()
     }
 
     componentWillMount() {
@@ -148,6 +148,11 @@ class Connecter extends React.Component {
         }
     }
 
+
+    initSetting = () => {
+        // 剪切板设置
+        this.props.global.onClipboard ? listenClipboard() : unListenClipboard()
+    }
 
     render() {
         return (

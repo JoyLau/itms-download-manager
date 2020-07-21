@@ -1,6 +1,7 @@
 import React from 'react'
 import {LoadingOutlined} from "@ant-design/icons";
 import config from "./config";
+import CryptoJS from "crypto-js";
 
 const path = window.require('path')
 
@@ -235,4 +236,17 @@ export function closeNotification(notification, key) {
  */
 export async function waitMoment(millis) {
     return new Promise(resolve => setTimeout(resolve, millis));
+}
+
+/**
+ * 解密口令
+ */
+export function decryptPassphrase(passphrase) {
+    let originalText = ''
+    try {
+        originalText = CryptoJS.AES.decrypt(passphrase, '').toString(CryptoJS.enc.Utf8);
+    } catch (e) {
+        //
+    }
+    return originalText;
 }
