@@ -17,14 +17,22 @@ export const openLogin = (on) => {
  * 监听剪切板
  */
 export const listenClipboard = () =>{
-    BrowserWindow.getFocusedWindow().addListener('focus', clipboardListener)
+    try {
+        BrowserWindow.getFocusedWindow().addListener('focus', clipboardListener)
+    } catch (e) {
+        //
+    }
 }
 
 /**
  * 取消监听剪切板
  */
 export const unListenClipboard = () => {
-    BrowserWindow.getFocusedWindow().removeListener('focus', clipboardListener)
+    try {
+        BrowserWindow.getFocusedWindow().removeListener('focus', clipboardListener)
+    } catch (e) {
+        //
+    }
 }
 
 /**

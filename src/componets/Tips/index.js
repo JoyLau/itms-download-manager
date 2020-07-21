@@ -23,6 +23,9 @@ class Tips extends React.Component {
     }
 
     playAudio = () => {
+        if (!this.props.global.playFinishAudio) {
+            return;
+        }
         let that = this;
         // 播放下载完成铃声
         const mp3 = require('./' + this.props.global.finishAudio)
@@ -46,6 +49,11 @@ class Tips extends React.Component {
                 // shell.openExternal("itms-download-manager://")
                 shell.showItemInFolder(filePath)
             }
+        }
+
+        // 下载完成是否自动打开
+        if (this.props.global.finishOpen){
+            shell.showItemInFolder(filePath)
         }
     }
 

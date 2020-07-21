@@ -49,7 +49,7 @@ class Global {
     @observable
     delNotExist = this.readStorageOrElse('delNotExist',false)
 
-    // 下载完成播放的提示音
+    // 下载完成是否播放提示音
     @observable
     playFinishAudio = this.readStorageOrElse('playFinishAudio',true)
 
