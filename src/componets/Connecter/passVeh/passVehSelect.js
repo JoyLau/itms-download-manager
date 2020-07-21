@@ -328,8 +328,8 @@ class PassVehSelect extends Component {
 
                         const zipFullPath = that.props.global.savePath + config.sep + taskName;
                         const newPath = path.replace(basename(path),filename(taskName));
-                        // 重命名
-                        fse.renameSync(path, newPath)
+                        // 重命名, 在 Windows 下使用 renameSync 会报错,这里改用 await rename
+                        await fse.rename(path, newPath)
                         // 生成压缩包
                         await zip(newPath, zipFullPath, true)
 

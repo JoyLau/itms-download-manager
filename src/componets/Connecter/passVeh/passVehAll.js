@@ -407,8 +407,8 @@ class PassVehAll extends Component {
                                     const zipFullPath = that.props.global.savePath + config.sep + taskName;
 
                                     const newPath = rootPath.replace(basename(rootPath),filename(taskName));
-                                    // 重命名
-                                    fse.renameSync(rootPath, newPath)
+                                    // 重命名, 在 Windows 下使用 renameSync 会报错,这里改用 await rename
+                                    await fse.rename(rootPath, newPath)
                                     // 生成压缩包
                                     await zip(newPath, zipFullPath, true)
 

@@ -27,7 +27,7 @@ export const tmpdir = os.tmpdir() + config.sep + config.PROTOCOL;
  * @returns {string}
  */
 export function basename(p) {
-    return path.posix.basename(p)
+    return path.basename(p)
 }
 
 /**
@@ -36,7 +36,7 @@ export function basename(p) {
  * @returns {string}
  */
 export function filename(f) {
-    return path.posix.basename(f,path.extname(f))
+    return path.basename(f,path.extname(f))
 }
 
 export const statusText = {
