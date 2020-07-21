@@ -28,7 +28,6 @@
     },
     "win": {
       "icon": "./public/icons/win.ico",
-      "requestedExecutionLevel": "requireAdministrator",
       "target": [
         {
           "target": "nsis",
