@@ -2,6 +2,7 @@ import React from 'react'
 import {LoadingOutlined} from "@ant-design/icons";
 import config from "./config";
 import CryptoJS from "crypto-js";
+import global from "../store/global";
 
 const path = window.require('path')
 
@@ -185,7 +186,25 @@ export function parseURLQueryString(query) {
  * 压缩
  */
 export async function zip(source, dest, clean) {
-    await compressing.zip.compressDir(source, dest)
+    let compress;
+    switch (global.compressType) {
+        case '.zip':
+            compress = compressing.zip
+            break;
+        case '.gzip':
+            compress = compressing.gzip
+            break;
+        case '.tar':
+            compress = compressing.tar
+            break;
+        case '.tgz':
+            compress = compressing.tgz
+            break;
+        default:
+            compress = compressing.zip
+            break;
+    }
+    await compress.compressDir(source, dest)
         .then(() => {
             if (clean) {
                 fse.remove(source)

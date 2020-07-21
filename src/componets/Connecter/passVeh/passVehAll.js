@@ -217,7 +217,7 @@ class PassVehAll extends Component {
             + data.extra.searchData.currentUserName
             + "_"
             + formatDate_(new Date().getTime())
-            + '.zip';
+            + this.props.global.compressType;
 
         const totalData = allData.flatMap((value,index) => {
             value.forEach(item => {

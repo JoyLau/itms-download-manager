@@ -122,7 +122,7 @@ class PassVehSelect extends Component {
             + protocolData.extra.searchData.currentUserName
             + "_"
             + formatDate_(new Date().getTime())
-            + '.zip';
+            + this.props.global.compressType;
 
         const process = {
             total: resultData.length,
