@@ -1,16 +1,17 @@
 import React, {Component} from 'react'
-import {Button, Layout, List, Divider, Popconfirm, Modal, Input, message} from 'antd'
+import {Button, Layout, List, Divider, Popconfirm, Modal, Input, message, Dropdown, Menu} from 'antd'
 
 import EmptyContent from "../../componets/EmptyContent";
 import WindowControl from "../../componets/WindowControl";
 import {inject, observer} from "mobx-react";
-import {CaretRightOutlined, DeleteOutlined, PauseOutlined,PlusOutlined} from "@ant-design/icons";
+import {CaretRightOutlined, DeleteOutlined, PauseOutlined,PlusOutlined,CopyOutlined} from "@ant-design/icons";
 import ActiveItem from "./activeItem";
 import ProcessItem from "./processItem";
 import {eventBus,decryptPassphrase} from "../../util/utils";
 import config from "../../util/config";
 
 
+const {clipboard} = window.require('electron')
 const {Header, Content} = Layout;
 const {TextArea} = Input;
 
@@ -162,11 +163,18 @@ class ActiveView extends Component {
                 onOk={this.handleOk}
                 onCancel={this.handleCancel}
             >
-                <TextArea onChange={(e) => this.setState({passphrase: e.target.value})}
-                          onPressEnter={this.handleOk}
-                          value={this.state.passphrase}
-                          placeholder={'将复制的口令粘贴到此处即可开始下载'}
-                          autoSize={{minRows: 6, maxRows: 20}}/>
+                <Dropdown overlay={
+                    <Menu>
+                        <Menu.Item key="1" onClick={() => this.setState({passphrase: clipboard.readText()})}><CopyOutlined /> 粘贴口令</Menu.Item>
+                    </Menu>
+                } trigger={['contextMenu']}>
+                    <TextArea onChange={(e) => this.setState({passphrase: e.target.value})}
+                              onPressEnter={this.handleOk}
+                              value={this.state.passphrase}
+                              placeholder={'将复制的口令粘贴到此处即可开始下载'}
+                              autoSize={{minRows: 6, maxRows: 20}}
+                    />
+                </Dropdown>
                 <div className="ant-modal-footer">
                     <Button type="primary" onClick={this.handleOk} size={'small'}>立即下载</Button>
                 </div>
