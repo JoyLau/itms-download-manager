@@ -18,7 +18,11 @@ export const openLogin = (on) => {
  */
 export const listenClipboard = () =>{
     try {
-        BrowserWindow.getFocusedWindow().addListener('focus', clipboardListener)
+        let win = BrowserWindow.getFocusedWindow();
+        if (!win) {
+            win = BrowserWindow.getAllWindows()[0]
+        }
+        win.addListener('focus', clipboardListener)
     } catch (e) {
         //
     }
@@ -29,7 +33,11 @@ export const listenClipboard = () =>{
  */
 export const unListenClipboard = () => {
     try {
-        BrowserWindow.getFocusedWindow().removeListener('focus', clipboardListener)
+        let win = BrowserWindow.getFocusedWindow();
+        if (!win) {
+            win = BrowserWindow.getAllWindows()[0]
+        }
+        win.removeListener('focus', clipboardListener)
     } catch (e) {
         //
     }
@@ -44,7 +52,6 @@ function clipboardListener() {
         return;
     }
     const originalText = decryptPassphrase(clipboardText);
-    console.info("口令解密后的数据:",originalText);
     if (originalText === '' || originalText.indexOf(config.PROTOCOL) < 0) {
         return;
     }

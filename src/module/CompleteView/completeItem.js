@@ -41,62 +41,39 @@ class CompleteItem extends React.Component {
 
 
     render() {
-        const styles = {
-            paddingLeft: 10,
-            paddingRight: 10,
-            backgroundColor: this.props.selected ? '#e6f7ff' : ''
-        };
-
-        const content = {
-            justifyContent: 'space-between',
-            flex: 'initial',
-            width: '260px',
-            alignItems: 'center',
-            display: 'flex'
-        }
-
-        const vehPassStyle = {
-            color: '#f56a00',
-            backgroundColor: '#fde3cf'
-        }
-
-        const illegalPassStyle = {
-            color: '#0276f1',
-            backgroundColor: '#d7d4fa'
-        }
-
         const item = this.props.item;
         //文件是否存在
         const exists = fileExists(item.localPath);
 
         return (
-            <List.Item style={styles} onClick={() => this.props.onClick()}>
-                <List.Item.Meta
-                    avatar={
-                        <Badge dot={item.isNew}>
-                            <Avatar style={item.avatar.indexOf('过车') > -1 ? vehPassStyle : illegalPassStyle } size={48}>{item.avatar}</Avatar>
-                        </Badge>
+            <div className={'taskItem'}>
+                <List.Item className={"styles"} style={{backgroundColor: this.props.selected ? '#e6f7ff' : ''}} onClick={() => this.props.onClick()}>
+                    <List.Item.Meta
+                        avatar={
+                            <Badge dot={item.isNew}>
+                                <Avatar className={item.avatar.indexOf('过车') > -1 ? "vehPassStyle" : "illegalPassStyle" } size={48}>{item.avatar}</Avatar>
+                            </Badge>
                         }
-                    title={<Text disabled = {!exists}>{item.name}</Text>}
-                    description={this.renderDesc(exists,item)}
-                />
-                <div style={content}>
-                    <div style={{width: 170}}>
-                        <Progress percent={item.process.percent} showInfo={false} strokeColor={exists ? '#52c41a' : '#F5F5F5'}/>
-                        <div style={{display: 'flex', justifyContent: 'space-between'}}>
-                            <span>{''}</span>
-                            <Text disabled = {!exists}>{item.process.percent}%</Text>
+                        title={<Text disabled = {!exists}>{item.name}</Text>}
+                        description={this.renderDesc(exists,item)}
+                    />
+                    <div className={"content"}>
+                        <div style={{width: 170}}>
+                            <Progress percent={item.process.percent} showInfo={false} strokeColor={exists ? '#52c41a' : '#F5F5F5'}/>
+                            <div className={'progressInfo'}>
+                                <span>{''}</span>
+                                <Text disabled = {!exists}>{item.process.percent}%</Text>
+                            </div>
                         </div>
+                        {
+                            exists ?
+                                <span style={{color:'#52c41a'}}><CheckCircleTwoTone twoToneColor="#52c41a" />  已完成</span>
+                                :
+                                <Text disabled><DeleteOutlined />  已删除</Text>
+                        }
                     </div>
-                    {
-                        exists ?
-                            <span style={{color:'#52c41a'}}><CheckCircleTwoTone twoToneColor="#52c41a" />  已完成</span>
-                            :
-                            <Text disabled><DeleteOutlined />  已删除</Text>
-                    }
-                </div>
-
-            </List.Item>
+                </List.Item>
+            </div>
         )
     }
 }

@@ -36,9 +36,9 @@ class IllegalVehAll extends Component {
     componentDidMount() {
         eventBus.on('illegalVeh-all', this.processAllData)
 
-        eventBus.on('pause', (info) => this.state[info.taskId].downloadBagpipe.pause())
+        eventBus.on('pause', (info) => this.state[info.taskId] ? this.state[info.taskId].downloadBagpipe.pause() : null)
 
-        eventBus.on('resume', (info) => this.state[info.taskId].downloadBagpipe.resume())
+        eventBus.on('resume', (info) => this.state[info.taskId] ? this.state[info.taskId].downloadBagpipe.resume() : null)
 
         eventBus.on('stop', (info) => {
             if (this.state[info.taskId]) {
@@ -158,7 +158,7 @@ class IllegalVehAll extends Component {
             state: this.props.task.getJobs().filter(item => item.state === 'active').length >= this.props.global.maxTasks ? 'waiting' : 'active', // 任务状态, 如果当前有正在下载的任务, 则将任务置为等待中
             process: process,
             isNew: true,
-            // protocolData: protocolData.extra.searchData, // 协议传输数据
+            protocolData: protocolData, // 协议传输数据
         }
 
         //数据存放
@@ -184,11 +184,11 @@ class IllegalVehAll extends Component {
             // 添加任务
             that.props.task.addJob(job)
             // 开始处理
-            that.process(job)
+            await that.process(job)
         })
     }
 
-    process = job => {
+    process = async job => {
         const that = this;
         if (job.state !== 'active') {
             return;
@@ -196,23 +196,21 @@ class IllegalVehAll extends Component {
         const jobId = job.id;
 
         if (!this.state[jobId]){
-            updateNotification(notification, {
-                key: jobId,
-                message: '资源准备中,请稍等',
-                description: '数据读取中...',
-            })
+            const process = this.props.jobProcess.getProcess(job.id);
+            this.props.jobProcess.updateProcessItem(job.id,'message',"数据读取中...")
+            await waitMoment(500);
 
             // 获取任务的元数据
-            allMetaData(jobId,function (data) {
-                that.state[jobId] = {
-                    finishCount: 0,
-                    finishSize: 0,
-                    job: {
-                        item: data, // 资源项
-                    },
-                    downloadBagpipe: new Bagpipe(that.props.global.maxJobs, {}) // 任务单独分配线程
-                }
-            })
+            const data = await allMetaData(jobId)
+            that.state[jobId] = {
+                finishCount: process.finishCount,
+                finishSize: process.finishSize,
+                job: {
+                    item: data, // 资源项
+                },
+                downloadBagpipe: new Bagpipe(that.props.global.maxJobs, {}) // 任务单独分配线程
+            }
+            this.props.jobProcess.updateProcessItem(job.id,'message',null)
         }
         // 存放的值再赋值进去
         job.item = this.state[jobId].job.item;
@@ -259,6 +257,8 @@ class IllegalVehAll extends Component {
 
             const nowTime = new Date().getTime();
             task.forEach((item, index) => {
+                // 如果发现 state.finishCount !== 0 的话,则任务为断点续传任务, 跳过之前的下载项
+                if (index < this.state[activeTask.id].finishCount) return;
                 this.state[activeTask.id].downloadBagpipe.push(that.download, index, item, task.length, nowTime, function () {});
             })
         } catch (e) {
@@ -328,6 +328,7 @@ class IllegalVehAll extends Component {
                         // 重命名, 在 Windows 下使用 renameSync 会报错,这里改用 await rename
                         await fse.rename(path, newPath)
                         // 生成压缩包
+                        that.props.jobProcess.updateProcessItem(taskId,'message',"正在压缩文件...")
                         await zip(newPath, zipFullPath, true)
 
 
@@ -336,6 +337,7 @@ class IllegalVehAll extends Component {
 
                         // 更新状态, 等 1 秒
                         await waitMoment(1000)
+                        that.props.jobProcess.updateProcessItem(taskId,'message',null)
                         // 保存路径
                         that.props.task.updateJob(taskId, "localPath",zipFullPath);
                         // 更改状态
@@ -401,7 +403,7 @@ class IllegalVehAll extends Component {
      * 创建 Excel
      */
     creatExcel = async (taskId,data, path) => {
-        this.props.jobProcess.updateProcessItem(taskId,'creatingExcel',true)
+        this.props.jobProcess.updateProcessItem(taskId,'message',"正在生成 Excel...")
         const workbook = new ExcelJS.Workbook();
         const sheet = workbook.addWorksheet('Sheet-1');
 

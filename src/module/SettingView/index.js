@@ -74,8 +74,8 @@ class SettingView extends React.Component {
         if (this.state.cacheSize ===0 ) {
             return;
         }
-        if (toJS(this.props.task.getJobs().filter(item => item.state === 'active').length > 0)) {
-            message.warning("当前有任务正在下载中, 请稍后再试!")
+        if (toJS(this.props.task.getJobs().filter(item => item.state !== 'complete').length > 0)) {
+            message.warning("当前有尚未下载完毕的任务, 请稍后再试!")
             return;
         }
         this.setState({
@@ -205,20 +205,18 @@ class SettingView extends React.Component {
                             <Row style={colRowStyle}>
                                 <Checkbox checked={this.props.global.errorTip} onChange={(e) => {this.props.global.changeErrorTip(e.target.checked)}}>下载失败时弹窗提示</Checkbox>
                             </Row>
+                            <Row style={colRowStyle}>
+                                <Checkbox checked={this.props.global.playFinishAudio} onChange={(e) => {this.props.global.changePlayFinishAudio(e.target.checked)}}>下载完成后播放提示音</Checkbox>
+                            </Row>
                             <Row>
-                                <Col span={9}>
-                                    <Checkbox checked={this.props.global.playFinishAudio} onChange={(e) => {this.props.global.changePlayFinishAudio(e.target.checked)}}>下载完成后播放提示音</Checkbox>
-                                </Col>
-                                <Col span={15}>
-                                    <Radio.Group disabled={!this.props.global.playFinishAudio}
-                                                 value={this.props.global.finishAudio}
-                                                 onChange={this.changeAudio}
-                                    >
-                                        <Radio value={'5809.mp3'}>提示音 1</Radio>
-                                        <Radio value={'6953.mp3'}>提示音 2</Radio>
-                                        <Radio value={'9723.mp3'}>提示音 3</Radio>
-                                    </Radio.Group>
-                                </Col>
+                                <Radio.Group disabled={!this.props.global.playFinishAudio}
+                                             value={this.props.global.finishAudio}
+                                             onChange={this.changeAudio}
+                                >
+                                    <Radio value={'5809.mp3'}>提示音 1</Radio>
+                                    <Radio value={'6953.mp3'}>提示音 2</Radio>
+                                    <Radio value={'9723.mp3'}>提示音 3</Radio>
+                                </Radio.Group>
                             </Row>
                         </Col>
                     </Row>

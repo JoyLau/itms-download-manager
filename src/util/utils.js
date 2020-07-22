@@ -61,7 +61,7 @@ export function getStorage(key) {
     return val
 }
 
-export async function setStorage(key, value) {
+export function setStorage(key, value) {
     localStorage.setItem(key, JSON.stringify(value))
 }
 
@@ -207,7 +207,7 @@ export async function zip(source, dest, clean) {
     await compress.compressDir(source, dest)
         .then(() => {
             if (clean) {
-                fse.remove(source)
+                fse.remove(source).catch(e => console.error(e))
             }
         })
         .catch(error => {
@@ -220,9 +220,9 @@ export async function zip(source, dest, clean) {
  */
 export async function unzip(source, dest, clean) {
     await compressing.zip.uncompress(source, dest)
-        .then(() => {
+        .then(async () => {
             if (clean) {
-                fse.remove(source)
+                await fse.remove(source)
             }
         })
         .catch(error => {

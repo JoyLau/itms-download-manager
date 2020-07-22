@@ -4,11 +4,12 @@ import {Button, Layout, List, Divider, Popconfirm, Modal, Input, message, Dropdo
 import EmptyContent from "../../componets/EmptyContent";
 import WindowControl from "../../componets/WindowControl";
 import {inject, observer} from "mobx-react";
-import {CaretRightOutlined, DeleteOutlined, PauseOutlined,PlusOutlined,CopyOutlined} from "@ant-design/icons";
+import {CaretRightOutlined, DeleteOutlined, PauseOutlined,PlusOutlined,CopyOutlined,RedoOutlined} from "@ant-design/icons";
 import ActiveItem from "./activeItem";
 import ProcessItem from "./processItem";
 import {eventBus,decryptPassphrase} from "../../util/utils";
 import config from "../../util/config";
+import {toJS} from "mobx";
 
 
 const {clipboard} = window.require('electron')
@@ -21,7 +22,7 @@ class ActiveView extends Component {
 
     state = {
         selectedItem: null,
-        visible: false
+        visible: false,
     }
 
     componentDidMount() {
@@ -56,46 +57,38 @@ class ActiveView extends Component {
     }
 
     renderItem(item) {
-        // 任务可能异常了
-        if (!this.props.jobProcess.process[item.id]){
-            const process = {
-                total: 0,
-                finishCount: 0,
-                percent: 0,
-                finishSize: 0,
-                remainingTime: ''
-            }
-            this.props.jobProcess.updateProcess(item.id,process)
-            // 更改任务状态为 error
-            this.props.task.updateStateJob(item.id, "error")
-        }
-        if (item.state === 'active') {
-            return (
+        // if (item.state === 'active') {
+        //     return (
+        //         <ProcessItem
+        //             selected={this.state.selectedItem && item.id === this.state.selectedItem.id}
+        //             onClick={() => this.onItemClick(item)}
+        //             item={item}
+        //         />
+        //     )
+        // } else {
+        //     return (
+        //         <ActiveItem
+        //             selected={this.state.selectedItem && item.id === this.state.selectedItem.id}
+        //             onClick={() => this.onItemClick(item)}
+        //             item={item}
+        //         />
+        //     )
+        // }
+
+        return (
                 <ProcessItem
                     selected={this.state.selectedItem && item.id === this.state.selectedItem.id}
                     onClick={() => this.onItemClick(item)}
                     item={item}
                 />
             )
-        } else {
-            return (
-                <ActiveItem
-                    selected={this.state.selectedItem && item.id === this.state.selectedItem.id}
-                    onClick={() => this.onItemClick(item)}
-                    item={item}
-                />
-            )
-        }
-
     }
 
 
     changeMenuState = () => {
-        if (this.props.task.getJobs().filter(item => (item.state !== 'complete')).length === 0) {
-            this.setState({
-                selectedItem: null
-            })
-        }
+        this.setState({
+            selectedItem: null
+        })
     }
 
     remove = () => {
@@ -105,16 +98,30 @@ class ActiveView extends Component {
     }
 
     resume = () => {
-        // 发出通知
-        eventBus.emit('resume',{taskId:this.state.selectedItem.id})
-        this.props.task.updateStateJob(this.state.selectedItem.id, 'active')
+        const selectedItem = this.state.selectedItem;
+        const state = selectedItem.state;
+        // 如果是暂停任务,则恢复下载
+        if (state === 'paused') {
+            eventBus.emit('resume',{taskId:selectedItem.id})
+            this.props.task.updateStateJob(selectedItem.id, 'active')
+        }
+
+        // 如果是出错的任务,则重新下载
+        if (state === 'error'){
+            eventBus.emit(selectedItem.type,toJS(selectedItem.protocolData))
+            this.props.task.deleteJob(selectedItem.id)
+        }
+
+        // 如果是等待的任务,则恢复下载
+        if (state === 'waiting') {
+            this.props.task.updateStateJob(selectedItem.id, 'active')
+            eventBus.emit(selectedItem.type + '-waiting-to-active',selectedItem)
+        }
     }
 
     pause = () => {
         // 发出通知
         eventBus.emit('pause',{taskId:this.state.selectedItem.id})
-        // 保存当前进度
-        this.props.task.updateJob(this.state.selectedItem.id,'process',this.props.jobProcess.process[this.state.selectedItem.id])
         // 更新状态
         this.props.task.updateStateJob(this.state.selectedItem.id, 'paused')
     }
@@ -171,7 +178,7 @@ class ActiveView extends Component {
                     <TextArea onChange={(e) => this.setState({passphrase: e.target.value})}
                               onPressEnter={this.handleOk}
                               value={this.state.passphrase}
-                              placeholder={'将复制的口令粘贴到此处即可开始下载'}
+                              placeholder={'将页面复制的口令粘贴到此处即可开始下载'}
                               autoSize={{minRows: 6, maxRows: 20}}
                     />
                 </Dropdown>
@@ -183,6 +190,9 @@ class ActiveView extends Component {
     }
 
     render() {
+        const {selectedItem} = this.state;
+        const jobs = this.props.task.getJobs();
+        const activeJobs = jobs.filter(item => (item.state !== 'complete'));
         return (
             <Layout>
                 <Header className="darg-move-window header-toolbar">
@@ -190,24 +200,24 @@ class ActiveView extends Component {
                     <Divider type="vertical"/>
                     <div>
                         {
-                            this.state.selectedItem && (this.state.selectedItem.state === 'paused' || this.state.selectedItem.state === 'error') ?
+                            selectedItem && (selectedItem.state === 'paused' || selectedItem.state === 'error' || selectedItem.state === 'waiting') ?
                                 <Button onClick={this.resume}
-                                        disabled={!this.state.selectedItem}
-                                        size={'small'} icon={<CaretRightOutlined/>}/> :
+                                        disabled={!selectedItem || activeJobs.length === 0}
+                                        size={'small'} icon={selectedItem.state === 'error' ? <RedoOutlined />: <CaretRightOutlined/>}/> :
                                 <Button onClick={this.pause}
-                                        disabled={!this.state.selectedItem}
+                                        disabled={!selectedItem || activeJobs.length === 0}
                                         size={'small'} type="dashed" icon={<PauseOutlined/>}/>
                         }
                         <Divider type="vertical"/>
                         {
-                            this.state.selectedItem ?
+                            selectedItem && activeJobs.length > 0 ?
                                 <Popconfirm title="你确定要删除这个下载任务吗?"
                                             onConfirm={this.remove}
                                             okText="删除"
                                             cancelText="取消">
-                                    <Button disabled={!this.state.selectedItem}
-                                            size={'small'}
-                                            type="danger">
+                                    <Button
+                                        size={'small'}
+                                        type="danger">
                                         <DeleteOutlined/>
                                     </Button>
                                 </Popconfirm>
@@ -223,10 +233,10 @@ class ActiveView extends Component {
                 </Header>
                 <Content>
                     {
-                        this.props.task.getJobs().filter(item => (item.state !== 'complete')).length > 0 ?
+                        activeJobs.length > 0 ?
                             <List
                                 itemLayout="horizontal"
-                                dataSource={this.props.task.getJobs().filter(item => item.state !== 'complete')}
+                                dataSource={activeJobs}
                                 renderItem={item => this.renderItem(item)}/>
                             :
                             <EmptyContent textType={'active'}/>

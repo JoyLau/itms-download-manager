@@ -1,9 +1,6 @@
-import {observable, action, configure, autorun, toJS} from 'mobx';
+import {observable, action, toJS} from 'mobx';
 import {saveJobs, addJob,updateJob,allJobs,deleteJob} from '../util/dbUtils'
 
-configure({
-    enforceActions: 'always'
-});
 
 /**
  * 任务进度配置
@@ -23,12 +20,9 @@ class Task {
     }
 
     initJobs() {
-        const that = this
-        allJobs(function (array) {
-            if (array.length !== 0) {
-                that.setJobs(array)
-            }
-        });
+        allJobs()
+            .then(array => this.setJobs(array))
+            .then(() => console.info("jobs 初始化完成!"));
     }
 
     getJobs() {

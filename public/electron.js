@@ -166,10 +166,6 @@ if (!gotTheLock) {
         }
         win.show() || win.isFocused() || win.focus();
     })
-
-    app.on('will-quit', () => {
-        win.webContents.send('del-active-task',{});
-    })
 }
 
 

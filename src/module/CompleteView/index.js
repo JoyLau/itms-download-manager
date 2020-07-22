@@ -64,33 +64,34 @@ class CompleteView extends Component {
     }
 
     changeMenuState = () => {
-        if (this.props.task.getJobs().filter(item => item.state === 'complete').length === 0) {
-            this.setState({
-                selectedItem: null
-            })
-        }
+        this.setState({
+            selectedItem: null
+        })
     }
 
 
     render() {
+        const {selectedItem} = this.state;
+        const jobs = this.props.task.getJobs();
+        const completeJobs = jobs.filter(item => (item.state === 'complete'));
         return (
             <Layout>
                 <Header className="darg-move-window header-toolbar">
                     <div>
                         <Button size={'small'}
-                                disabled={!this.state.selectedItem}
+                                disabled={!selectedItem}
                                 onClick={this.openTaskFile}
-                                type={this.state.selectedItem ? "primary" : null}
+                                type={selectedItem ? "primary" : null}
                                 icon={<FolderOpenOutlined />}/>
                         <Divider type="vertical"/>
                         {
-                            this.state.selectedItem ?
+                            selectedItem && completeJobs.length > 0 ?
                                 <Popconfirm title="是否同时删除文件?"
                                             onConfirm={this.removeTask}
                                             onCancel={this.removeTaskAndFile}
                                             okText="否"
                                             cancelText="是">
-                                    <Button disabled={!this.state.selectedItem}
+                                    <Button disabled={!selectedItem}
                                             size={'small'} type="danger"><DeleteOutlined/></Button>
                                 </Popconfirm>
                                 :
@@ -102,10 +103,10 @@ class CompleteView extends Component {
                 </Header>
                 <Content>
                     {
-                        this.props.task.getJobs().filter(item => item.state === 'complete').length > 0 ?
+                        completeJobs.length > 0 ?
                             <List
                                 itemLayout="horizontal"
-                                dataSource={this.props.task.getJobs().filter(item => item.state === 'complete')}
+                                dataSource={completeJobs}
                                 renderItem={item => this.renderItem(item)}/>
                             :
                             <EmptyContent textType={'complete'}/>

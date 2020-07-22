@@ -1,5 +1,6 @@
 import Dexie from "dexie";
 import _ from 'lodash'
+import {keys} from "mobx";
 
 const db_codes = new Dexie("sysCodes");
 db_codes.version(1).stores({code: ''});
@@ -41,11 +42,9 @@ export function saveJobs(jobs, callback) {
         .catch(error => {console.error(error)})
 }
 
-export function allJobs(callback) {
-    // 按创建时间进行降序排序
-    t_job.toArray()
-        .then(array => callback(_.orderBy(array, ['creatTime'], ['desc'])))
-        .catch(error => {console.error(error)})
+export async function allJobs() {
+    // 按创建时间进行排序
+    return _.orderBy(await t_job.toArray(), ['creatTime'], ['desc'])
 }
 
 export function addJob(job, callback) {
@@ -68,14 +67,36 @@ export function deleteJob(jobId, callback) {
         .catch(error => {console.error(error)})
 }
 
+export async function allProcess() {
+    const keys = await t_process.toCollection().primaryKeys();
+    const process = {};
+    for (const key of keys) {
+        process[key] = await t_process.get(key)
+    }
+    return process
+}
+
+
 export function saveProcess(process) {
     Object.keys(process).forEach(key => {
-        t_process.put(process[key], key);
+        t_process.put(process[key], key).catch(e => console.error(e));
     })
 }
 
+export function updateProcess(id,process) {
+    t_process.put(process,id).catch(e => console.error(e));
+}
+
+export function updateProcessItem(id,key,obj) {
+    t_process.get(id)
+        .then(value => {
+            value[key] = obj;
+            updateProcess(id, value)
+        })
+}
+
 export function deleteProcess(id) {
-    t_process.delete(id);
+    t_process.delete(id).catch(e => console.error(e));
 }
 
 
@@ -88,12 +109,10 @@ export function saveAllMetaData(metaData, jobId, callback) {
 
 
 export function deleteMetaData(jobId) {
-    t_metaData.delete(jobId)
+    t_metaData.delete(jobId).catch(e => console.error(e));
 }
 
-export function allMetaData(jobId, callback) {
+export async function allMetaData(jobId) {
     // 将所有数据递归为一维数组
-    t_metaData.get(jobId)
-        .then(arr => callback(_.flattenDeep(arr)))
-        .catch(error => {console.error(error)})
+    return _.flattenDeep(await t_metaData.get(jobId));
 }

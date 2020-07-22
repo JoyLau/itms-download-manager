@@ -4,16 +4,17 @@ import config from "../../util/config"
 import {message} from 'antd';
 import PassVeh from './passVeh'
 import {eventBus,tmpdir} from "../../util/utils";
-import {listenClipboard,unListenClipboard} from '../../util/settingUtils'
+import {listenClipboard,unListenClipboard,openLogin} from '../../util/settingUtils'
 import Tips from "../Tips";
 import IllegalVeh from "./illegalVeh";
 import axios from "axios";
 import {toJS} from "mobx";
 
 const {ipcRenderer} = window.require('electron')
+const {BrowserWindow} = window.require('electron').remote;
 const fse = window.require('fs-extra');
 
-@inject('global', 'task')
+@inject('global', 'task',"jobProcess")
 @observer
 class Connecter extends React.Component {
 
@@ -24,16 +25,6 @@ class Connecter extends React.Component {
         eventBus.on('add-task',(arg) => this.resolveTask(arg))
 
         eventBus.on('job-downloaded',this.onJobDownload)
-
-        // 删除正在运行的任务和等待
-        ipcRenderer.on('del-active-task', (event) => {
-            const that = this;
-            this.props.task.getJobs().forEach(job => {
-                if (job.state !== 'complete') {
-                    that.props.task.deleteJob(job.id)
-                }
-            })
-        })
 
         // 确保下载目录是否存在, 不存在则创建他
         fse.ensureDirSync(this.props.global.savePath)
@@ -84,7 +75,7 @@ class Connecter extends React.Component {
 
     validateRules = (data) => {
         if (!data) {
-            message.error('任务已失效!');
+            message.error('任务已过期!');
             return;
         }
         try { // 合法性判断
@@ -150,8 +141,19 @@ class Connecter extends React.Component {
 
 
     initSetting = () => {
+        const that = this;
         // 剪切板设置
         this.props.global.onClipboard ? listenClipboard() : unListenClipboard()
+
+        // 开机启动
+        this.props.global.powerOn ? openLogin(true) : openLogin(false)
+
+        //启动后自动开始未完成的任务
+        if (this.props.global.autoStart) {
+            setTimeout(function () {
+                that.onJobDownload()
+            },3000)
+        }
     }
 
     render() {
