@@ -253,7 +253,7 @@ export function closeNotification(notification, key) {
  * @param millis
  * @returns {Promise<unknown>}
  */
-export async function waitMoment(millis) {
+export function waitMoment(millis) {
     return new Promise(resolve => setTimeout(resolve, millis));
 }
 

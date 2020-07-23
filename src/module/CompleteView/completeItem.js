@@ -1,7 +1,7 @@
 import React from 'react'
 import {Avatar, Badge, Divider, List, Progress,Typography} from 'antd'
 import {bytesToSize,formatTime,fileExists} from '../../util/utils'
-import {CheckCircleTwoTone,WarningOutlined, DeleteOutlined} from "@ant-design/icons";
+import {CheckCircleTwoTone,WarningOutlined, DeleteOutlined,LikeOutlined} from "@ant-design/icons";
 import {inject, observer} from "mobx-react";
 
 const fs = window.require('fs');
@@ -30,10 +30,13 @@ class CompleteItem extends React.Component {
             )
         } else {
             return (
-                <Text>
-                    数据大小: {bytesToSize(fs.statSync(item.localPath).size)}
+                <Text type="secondary" style={{fontSize: 12}}>
+                    <Badge status="warning" />数据大小: {bytesToSize(fs.statSync(item.localPath).size)}
                     <Divider type="vertical"/>
-                    下载总数: {item.process.total}
+                    <Badge status="success" />总图片: {item.process.total}
+                    {
+                        item.process.blankCount > 0 ? <span><Divider type="vertical"/><Badge status="error" />空图片: {item.process.blankCount}</span> : null
+                    }
                 </Text>
             )
         }
@@ -50,11 +53,11 @@ class CompleteItem extends React.Component {
                 <List.Item className={"styles"} style={{backgroundColor: this.props.selected ? '#e6f7ff' : ''}} onClick={() => this.props.onClick()}>
                     <List.Item.Meta
                         avatar={
-                            <Badge dot={item.isNew}>
+                            <Badge count={item.isNew ? <LikeOutlined style={{ color: '#f5222d' }} /> : null} >
                                 <Avatar className={item.avatar.indexOf('过车') > -1 ? "vehPassStyle" : "illegalPassStyle" } size={48}>{item.avatar}</Avatar>
                             </Badge>
                         }
-                        title={<Text disabled = {!exists}>{item.name}</Text>}
+                        title={<Text strong disabled = {!exists}>{item.name}</Text>}
                         description={this.renderDesc(exists,item)}
                     />
                     <div className={"content"}>

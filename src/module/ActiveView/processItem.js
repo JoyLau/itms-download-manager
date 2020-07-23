@@ -1,10 +1,10 @@
 import React from 'react'
-import {Avatar, Divider, List, Progress} from 'antd'
+import {Avatar, Badge, Divider, List, Progress, Row, Typography} from 'antd'
 import {bytesToSize,formatTime} from '../../util/utils'
 import {inject, observer} from "mobx-react";
-import {toJS} from "mobx";
-import {ClockCircleOutlined, ExclamationCircleOutlined, PauseCircleOutlined} from "@ant-design/icons";
+import {ClockCircleOutlined, ExclamationCircleOutlined, PauseCircleOutlined,LoadingOutlined} from "@ant-design/icons";
 
+const { Text } = Typography;
 
 @inject('task','jobProcess')
 @observer
@@ -31,20 +31,17 @@ class ProcessItem extends React.Component {
                         avatar={<Avatar className={item.avatar.indexOf('过车') > -1 ? "vehPassStyle" : "illegalPassStyle"} size={48}>{item.avatar}</Avatar>}
                         title={<span>{item.name}</span>}
                         description={
-                            <span>
-                            {bytesToSize(process.finishSize)}
-                                <Divider type="vertical"/>
-                                当前: {process.finishCount} , 共: {process.total}
-                                {
-                                    process.message ?
-                                        <span>
-                                        <Divider type="vertical"/>
-                                        {process.message}
-                                    </span>
-                                        :
-                                        null
-                                }
-                        </span>
+                            <span style={{fontSize: 12}}>
+                                <div>
+                                    <Badge status="warning" />{bytesToSize(process.finishSize)}
+                                    <Divider type="vertical"/>
+                                    <Badge status="processing" />当前: {process.finishCount}
+                                    <Divider type="vertical"/>
+                                    <Badge status="error" />空图片: {process.blankCount}
+                                    <Divider type="vertical"/>
+                                    <Badge status="success" />总计: {process.total}
+                                </div>
+                            </span>
                         }
                     />
                     <div className={"content"}>
@@ -54,7 +51,14 @@ class ProcessItem extends React.Component {
                                 '100%': '#87d068',
                             }}/>
                             <div className={'progressInfo'}>
-                                <span>{formatTime(process.remainingTime)}</span>
+                                {
+                                    process.message ?
+                                        <span>
+                                            <LoadingOutlined style={{ color: '#1890ff',}} /> <Text ellipsis style={{fontSize: 12,width: 100}}>{process.message}</Text>
+                                        </span>
+                                        :
+                                        <span>{formatTime(process.remainingTime)}</span>
+                                }
                                 <span>{process.percent}%</span>
                             </div>
                         </div>

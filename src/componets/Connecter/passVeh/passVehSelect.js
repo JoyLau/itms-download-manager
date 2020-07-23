@@ -46,7 +46,7 @@ class PassVehSelect extends Component {
         eventBus.on('stop', (info) => {
             if (this.state[info.taskId]) {
                 this.state[info.taskId].downloadBagpipe.stop()
-                this.saveAndReset(info.taskId);
+                this.stopJob(info.taskId);
             }
         })
 
@@ -126,6 +126,7 @@ class PassVehSelect extends Component {
         const process = {
             total: resultData.length,
             finishCount: 0,
+            blankCount: 0,
             percent: 0,
             finishSize: 0,
             remainingTime: ''
@@ -149,6 +150,7 @@ class PassVehSelect extends Component {
         //数据存放
         this.state[job.id] = {
             finishCount: 0,
+            blankCount: 0,
             finishSize: 0,
             job: {
                 item: resultData, // 资源项
@@ -192,6 +194,7 @@ class PassVehSelect extends Component {
             const data = await allMetaData(jobId)
             that.state[jobId] = {
                 finishCount: process.finishCount,
+                blankCount: process.blankCount,
                 finishSize: process.finishSize,
                 job: {
                     item: data, // 资源项
@@ -293,7 +296,13 @@ class PassVehSelect extends Component {
                     // 更改任务状态为 error
                     that.props.task.updateStateJob(taskId, "error")
                 })
-                .on('end', async function () {
+                .on('response', function (response) {
+                    // 统计空白图片
+                    if (response.headers && response.headers['blank-image']) {
+                        that.state[taskId].blankCount++
+                    }
+                })
+                .on('end', function () {
                     that.state[taskId].finishCount++
 
                     // 当前任务已下载完成的文件数
@@ -310,6 +319,7 @@ class PassVehSelect extends Component {
                     const process = {
                         total: total,
                         finishCount: finishCount,
+                        blankCount: that.state[taskId].blankCount,
                         percent: Math.round(finishCount * 100 / total),
                         finishSize: finishSize,
                         speed: finishSize / (new Date().getTime() - startTime) * 1000,
@@ -321,29 +331,7 @@ class PassVehSelect extends Component {
 
                     // 如果下载完成
                     if (total === that.state[taskId].finishCount) {
-                        // 生成 excel
-                        await that.creatExcel(taskId,that.state[taskId].job.item, path);
-
-                        const zipFullPath = that.props.global.savePath + config.sep + taskName;
-                        const newPath = path.replace(basename(path),filename(taskName));
-                        // 重命名, 在 Windows 下使用 renameSync 会报错,这里改用 await rename
-                        await fse.rename(path, newPath)
-                        // 生成压缩包
-                        that.props.jobProcess.updateProcessItem(taskId,'message',"正在压缩文件...")
-                        await zip(newPath, zipFullPath, true)
-
-                        // 播放下载完成提示音和通知
-                        eventBus.emit('start-tips', taskName, zipFullPath)
-
-                        // 更新状态, 等 1 秒
-                        await waitMoment(1000)
-                        that.props.jobProcess.updateProcessItem(taskId,'message',null)
-                        // 保存路径
-                        that.props.task.updateJob(taskId, "localPath",zipFullPath);
-                        that.props.task.updateStateJob(taskId, "complete")
-
-                        // 记录并且重置所使用的状态
-                        that.saveAndReset(taskId)
+                        that.downloadComplete(taskId,taskName,path);
                     }
 
                     // 异步回调
@@ -466,21 +454,55 @@ class PassVehSelect extends Component {
         await workbook.xlsx.writeFile(path + config.sep + "[过车图片_选择导出].xlsx");
     }
 
+    downloadComplete = async (taskId,taskName,path) => {
+        // 生成 excel
+        await this.creatExcel(taskId,this.state[taskId].job.item, path);
+
+        const zipFullPath = this.props.global.savePath + config.sep + taskName;
+        const newPath = path.replace(basename(path),filename(taskName));
+        // 重命名, 在 Windows 下使用 renameSync 会报错,这里改用 await rename
+        await fse.rename(path, newPath)
+        // 生成压缩包
+        this.props.jobProcess.updateProcessItem(taskId,'message',"正在压缩文件...")
+        await zip(newPath, zipFullPath, true)
+
+        // 播放下载完成提示音和通知
+        eventBus.emit('start-tips', taskName, zipFullPath)
+
+        // 更新状态, 等 1 秒
+        await waitMoment(1000)
+        this.props.jobProcess.updateProcessItem(taskId,'message',null)
+        // 保存路径
+        this.props.task.updateJob(taskId, "localPath",zipFullPath);
+        this.props.task.updateStateJob(taskId, "complete")
+
+        // 记录并且重置所使用的状态
+        this.saveAndReset(taskId)
+    }
+
     saveAndReset = (jobId) => {
         // 更新当前的任务进度
         this.props.task.updateJob(jobId,'process',toJS(this.props.jobProcess.process[jobId]));
 
-        // 删除当前任务的记录信息
-        delete this.state[jobId]
-
-        // 删除进度信息
-        this.props.jobProcess.deleteProcess(jobId)
-
-        // 删除任务元数据信息
-        deleteMetaData(jobId)
+        this.stopJob(jobId);
 
         // 发出任务下载完成通知
         eventBus.emit('job-downloaded',jobId)
+    }
+
+    stopJob = (jobId) => {
+        const that = this;
+
+        // 删除当前任务的记录信息
+        delete this.state[jobId]
+
+        // 删除进度信息(延迟一些,防止被后续异步操作更新)
+        setTimeout(function () {
+            that.props.jobProcess.deleteProcess(jobId)
+        },1000)
+
+        // 删除任务元数据信息
+        deleteMetaData(jobId)
     }
 
 
