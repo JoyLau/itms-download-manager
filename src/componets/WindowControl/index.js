@@ -2,15 +2,12 @@ import React from 'react'
 import { Button} from 'antd'
 import device from '../../util/device'
 import {MinusOutlined,ShrinkOutlined,ArrowsAltOutlined,CloseOutlined } from'@ant-design/icons';
-import {inject, observer} from "mobx-react";
 
 
 const {BrowserWindow} = window.require('electron').remote
 
 const classList = document.body.parentElement.classList
 
-@inject('task')
-@observer
 class WindowControl extends React.Component{
 
   state = {
