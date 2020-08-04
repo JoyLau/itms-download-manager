@@ -1,7 +1,6 @@
 import React from 'react'
 import {Avatar, Menu, Layout, Badge} from 'antd'
 import {DownloadOutlined,CheckOutlined,SettingOutlined} from'@ant-design/icons';
-import avatarImg from './avatar.png'
 import {inject, observer} from "mobx-react";
 import Version from "../../componets/Version";
 
@@ -12,13 +11,27 @@ const os = window.require('os')
 @observer
 class LeftSider extends React.Component {
 
+    randomAvatarIndex = () => {
+        return Math.floor(Math.random() * 21)
+    }
+
+    state = {
+        avatarIndex: this.randomAvatarIndex()
+    }
+
+    changeAvatar = () => {
+        this.setState({
+            avatarIndex: this.state.avatarIndex + 1 > 21 ? 0 : this.state.avatarIndex + 1
+        })
+    }
+
     render() {
         return (
             <Sider width={160}>
                 <div className="darg-move-window" style={{height:44}}>
                 </div>
-                <div className="userInfo">
-                    <Avatar size={50} src={avatarImg}/>
+                <div className="userInfo" onClick={this.changeAvatar}>
+                    <Avatar size={80} shape={"square"} src={require('./avatar/avatar_' + this.state.avatarIndex + '.svg')}/>
                 </div>
                 <div className="userName">
                     <span>{os.userInfo().username}</span>

@@ -6,14 +6,7 @@ import {inject, observer} from "mobx-react";
 import {message, notification} from "antd";
 import progress from "request-progress";
 import request from "request";
-import {
-    eventBus,
-    md5Sign,
-    zip,
-    updateNotification,
-    closeNotification,
-    waitMoment, formatDate_, basename, filename, formatDate,
-} from "../../../util/utils";
+import {eventBus, md5Sign, zip, updateNotification, closeNotification, waitMoment, formatDate_, basename, filename, formatDate,} from "../../../util/utils";
 import Bagpipe from "../../Bagpipe/bagpipe";
 import config from '../../../util/config'
 import axios from "axios";
@@ -248,12 +241,18 @@ class IllegalVehSelect extends Component {
                     that.props.task.updateStateJob(taskId, "error")
                 })
                 .on('response', function (response) {
+                    // 如果任务信息不存在了, 则直接返回
+                    if (!that.state[item.taskId]) return;
+
                     // 统计空白图片
                     if (response.headers && response.headers['blank-image']) {
                         that.state[taskId].blankCount++
                     }
                 })
                 .on('end', function () {
+                    // 如果任务信息不存在了, 则直接返回
+                    if (!that.state[item.taskId]) return;
+
                     that.state[taskId].finishCount++
 
                     // 当前任务已下载完成的文件数

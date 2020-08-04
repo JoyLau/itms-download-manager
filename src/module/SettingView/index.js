@@ -4,12 +4,13 @@ import {FolderOutlined} from '@ant-design/icons';
 import WindowControl from "../../componets/WindowControl";
 import {inject, observer} from "mobx-react";
 import {eventBus, tmpdir, bytesToSize} from "../../util/utils";
+import {cleanMetaData} from "../../util/dbUtils";
 import {openLogin,listenClipboard,unListenClipboard} from '../../util/settingUtils'
 import {toJS} from "mobx";
 
 const {Header} = Layout;
 const { Option } = Select;
-const {dialog,app} = window.require('electron').remote;
+const {dialog} = window.require('electron').remote;
 
 const os = window.require('os')
 const klaw = window.require('klaw')
@@ -56,7 +57,7 @@ class SettingView extends React.Component {
 
     powerOn = (e) => {
         this.props.global.changePowerOn(e.target.checked);
-        openLogin(app,e.target.checked);
+        openLogin(e.target.checked);
     }
 
     onClipboard = e => {
@@ -71,7 +72,7 @@ class SettingView extends React.Component {
 
 
     clearCache = () => {
-        if (this.state.cacheSize ===0 ) {
+        if (this.state.cacheSize === 0 ) {
             return;
         }
         if (toJS(this.props.task.getJobs().filter(item => item.state !== 'complete').length > 0)) {
@@ -82,6 +83,8 @@ class SettingView extends React.Component {
             disableClearCache: true,
         })
         fse.emptyDir(tmpdir).then(value => {
+            // 清空 meta data 缓存
+            cleanMetaData();
             this.setState({
                 disableClearCache: false,
             })
@@ -113,8 +116,11 @@ class SettingView extends React.Component {
                             <Row style={colRowStyle}>
                                 <Checkbox checked={this.props.global.powerOn} onChange={this.powerOn}>开机启动</Checkbox>
                             </Row>
-                            <Row>
+                            <Row style={colRowStyle}>
                                 <Checkbox checked={this.props.global.autoStart} onChange={(e) => {this.props.global.changeAutoStart(e.target.checked)}}>启动后自动开始未完成的任务</Checkbox>
+                            </Row>
+                            <Row>
+                                <Checkbox checked={this.props.global.autoUpdate} onChange={e => this.props.global.changeAutoUpdate(e.target.checked)}>启动后检查更新</Checkbox>
                             </Row>
                         </Col>
                     </Row>

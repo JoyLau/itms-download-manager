@@ -3,7 +3,7 @@ import {inject, observer} from "mobx-react";
 import config from "../../util/config"
 import {message} from 'antd';
 import PassVeh from './passVeh'
-import {eventBus,tmpdir} from "../../util/utils";
+import {eventBus,tmpdir,setStorage} from "../../util/utils";
 import {listenClipboard,unListenClipboard,openLogin} from '../../util/settingUtils'
 import Tips from "../Tips";
 import IllegalVeh from "./illegalVeh";
@@ -57,6 +57,7 @@ class Connecter extends React.Component {
             this.props.global.changeMainMenu("active")
             const data = this.handleArg(arg);
             console.info("收到协议数据:", data)
+            if (!data) return;
 
             axios.get(data.url)
                 .then(function (response) {
@@ -99,6 +100,7 @@ class Connecter extends React.Component {
             eventBus.emit(data.extra.name + '-' + data.extra.type, data)
             // 发送更新软件通知
             if (data.update) {
+                setStorage("updateInfo",data.update)
                 eventBus.emit('update-soft', data.update)
             }
         } catch (e) {
@@ -113,7 +115,10 @@ class Connecter extends React.Component {
         console.info("arg 原始数据为:",arg)
         let argStr;
         if (Array.isArray(arg)) {
-            argStr = arg[arg.length - 1].replace(config.PROTOCOL + "://", "");
+            const lastArg = arg[arg.length - 1];
+            // 最后一项不包含自定义协议
+            if (lastArg.indexOf(config.PROTOCOL + "://") < 0) return null
+            argStr = lastArg.replace(config.PROTOCOL + "://", "");
             // windows 下最后一项会带上 "/"
             if (argStr.charAt(argStr.length-1) === '/') {
                 argStr = argStr.substring(0,argStr.length -1)

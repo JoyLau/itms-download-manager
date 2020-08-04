@@ -1,7 +1,7 @@
 import React from 'react'
 import {Avatar, Badge, Divider, List, Progress,Typography} from 'antd'
-import {bytesToSize,formatTime,fileExists} from '../../util/utils'
-import {CheckCircleTwoTone,WarningOutlined, DeleteOutlined,LikeOutlined} from "@ant-design/icons";
+import {bytesToSize, statusText, fileExists, jobTypeClass} from '../../util/utils'
+import {CheckCircleTwoTone,WarningOutlined, DeleteOutlined,LikeOutlined,CheckOutlined} from "@ant-design/icons";
 import {inject, observer} from "mobx-react";
 
 const fs = window.require('fs');
@@ -33,9 +33,9 @@ class CompleteItem extends React.Component {
                 <Text type="secondary" style={{fontSize: 12}}>
                     <Badge status="warning" />数据大小: {bytesToSize(fs.statSync(item.localPath).size)}
                     <Divider type="vertical"/>
-                    <Badge status="success" />总图片: {item.process.total}
+                    <Badge status="success" />总图片: {item.process.total.toLocaleString()}
                     {
-                        item.process.blankCount > 0 ? <span><Divider type="vertical"/><Badge status="error" />空图片: {item.process.blankCount}</span> : null
+                        item.process.blankCount > 0 ? <span><Divider type="vertical"/><Badge status="error" />空图片: {item.process.blankCount.toLocaleString()}</span> : null
                     }
                 </Text>
             )
@@ -53,8 +53,8 @@ class CompleteItem extends React.Component {
                 <List.Item className={"styles"} style={{backgroundColor: this.props.selected ? '#e6f7ff' : ''}} onClick={() => this.props.onClick()}>
                     <List.Item.Meta
                         avatar={
-                            <Badge count={item.isNew ? <LikeOutlined style={{ color: '#f5222d' }} /> : null} >
-                                <Avatar className={item.avatar.indexOf('过车') > -1 ? "vehPassStyle" : "illegalPassStyle" } size={48}>{item.avatar}</Avatar>
+                            <Badge dot={item.isNew} >
+                                <Avatar className={jobTypeClass[item.type]} size={48}>{item.avatar}</Avatar>
                             </Badge>
                         }
                         title={<Text strong disabled = {!exists}>{item.name}</Text>}
@@ -62,17 +62,17 @@ class CompleteItem extends React.Component {
                     />
                     <div className={"content"}>
                         <div style={{width: 170}}>
-                            <Progress percent={item.process.percent} showInfo={false} strokeColor={exists ? '#52c41a' : '#F5F5F5'}/>
+                            <Progress percent={100} showInfo={false} strokeColor={exists ? '#52c41a' : '#F5F5F5'}/>
                             <div className={'progressInfo'}>
                                 <span>{''}</span>
-                                <Text disabled = {!exists}>{item.process.percent}%</Text>
+                                <Text disabled = {!exists}>100%</Text>
                             </div>
                         </div>
                         {
                             exists ?
-                                <span style={{color:'#52c41a'}}><CheckCircleTwoTone twoToneColor="#52c41a" />  已完成</span>
+                                <span style={{color:'#52c41a'}}><CheckCircleTwoTone twoToneColor="#52c41a" /> {statusText.complete}</span>
                                 :
-                                <Text disabled><DeleteOutlined />  已删除</Text>
+                                <Text disabled><DeleteOutlined /> {statusText.delete}</Text>
                         }
                     </div>
                 </List.Item>

@@ -5,7 +5,6 @@ import EmptyContent from "../../componets/EmptyContent";
 import WindowControl from "../../componets/WindowControl";
 import {inject, observer} from "mobx-react";
 import {CaretRightOutlined, DeleteOutlined, PauseOutlined,PlusOutlined,CopyOutlined,RedoOutlined} from "@ant-design/icons";
-import ActiveItem from "./activeItem";
 import ProcessItem from "./processItem";
 import {eventBus,decryptPassphrase} from "../../util/utils";
 import config from "../../util/config";
@@ -57,24 +56,6 @@ class ActiveView extends Component {
     }
 
     renderItem(item) {
-        // if (item.state === 'active') {
-        //     return (
-        //         <ProcessItem
-        //             selected={this.state.selectedItem && item.id === this.state.selectedItem.id}
-        //             onClick={() => this.onItemClick(item)}
-        //             item={item}
-        //         />
-        //     )
-        // } else {
-        //     return (
-        //         <ActiveItem
-        //             selected={this.state.selectedItem && item.id === this.state.selectedItem.id}
-        //             onClick={() => this.onItemClick(item)}
-        //             item={item}
-        //         />
-        //     )
-        // }
-
         return (
                 <ProcessItem
                     selected={this.state.selectedItem && item.id === this.state.selectedItem.id}

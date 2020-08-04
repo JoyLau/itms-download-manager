@@ -4,17 +4,10 @@
 import React, {Component} from 'react'
 import {inject, observer} from "mobx-react";
 import axios from "axios";
-import {Button, Divider, message, notification} from "antd";
+import {Button, message, notification} from "antd";
 import progress from "request-progress";
 import request from "request";
-import {
-    eventBus,
-    md5Sign,
-    zip,
-    updateNotification,
-    closeNotification,
-    waitMoment, formatDate_, formatDate,
-} from "../../../util/utils";
+import {eventBus, md5Sign, zip, updateNotification, closeNotification, waitMoment, formatDate_, formatDate,} from "../../../util/utils";
 import Bagpipe from "../../Bagpipe/bagpipe";
 import config from '../../../util/config'
 import {toJS} from "mobx";
@@ -294,12 +287,18 @@ class IllegalVehAll extends Component {
 
                 })
                 .on('response', function (response) {
+                    // 如果任务信息不存在了, 则直接返回
+                    if (!that.state[item.taskId]) return;
+
                     // 统计空白图片
                     if (response.headers && response.headers['blank-image']) {
                         that.state[taskId].blankCount++
                     }
                 })
                 .on('end', function () {
+                    // 如果任务信息不存在了, 则直接返回
+                    if (!that.state[item.taskId]) return;
+
                     that.state[taskId].finishCount++
 
                     // 当前任务已下载完成的文件数

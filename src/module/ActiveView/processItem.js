@@ -1,6 +1,6 @@
 import React from 'react'
 import {Avatar, Badge, Divider, List, Progress, Row, Typography} from 'antd'
-import {bytesToSize,formatTime} from '../../util/utils'
+import {bytesToSize,formatTime,statusText,jobTypeClass} from '../../util/utils'
 import {inject, observer} from "mobx-react";
 import {ClockCircleOutlined, ExclamationCircleOutlined, PauseCircleOutlined,LoadingOutlined} from "@ant-design/icons";
 
@@ -28,18 +28,18 @@ class ProcessItem extends React.Component {
             <div className={'taskItem'}>
                 <List.Item className={"styles"} style={{backgroundColor: this.props.selected ? '#e6f7ff' : ''}} onClick={() => this.props.onClick()}>
                     <List.Item.Meta
-                        avatar={<Avatar className={item.avatar.indexOf('过车') > -1 ? "vehPassStyle" : "illegalPassStyle"} size={48}>{item.avatar}</Avatar>}
+                        avatar={<Avatar className={jobTypeClass[item.type]} size={48}>{item.avatar}</Avatar>}
                         title={<span>{item.name}</span>}
                         description={
                             <span style={{fontSize: 12}}>
                                 <div>
                                     <Badge status="warning" />{bytesToSize(process.finishSize)}
                                     <Divider type="vertical"/>
-                                    <Badge status="processing" />当前: {process.finishCount}
+                                    <Badge status="processing" />当前: {process.finishCount.toLocaleString()}
                                     <Divider type="vertical"/>
-                                    <Badge status="error" />空图片: {process.blankCount}
+                                    <Badge status="error" />空图片: {process.blankCount.toLocaleString()}
                                     <Divider type="vertical"/>
-                                    <Badge status="success" />总计: {process.total}
+                                    <Badge status="success" />总计: {process.total.toLocaleString()}
                                 </div>
                             </span>
                         }
@@ -63,9 +63,9 @@ class ProcessItem extends React.Component {
                             </div>
                         </div>
                         {item.state === 'active' ? <span>{bytesToSize(process.speed)}/s</span> : null}
-                        {item.state === 'waiting' ? <span style={{color:'orange'}}><ClockCircleOutlined /> 等待中</span> : null}
-                        {item.state === 'error' ? <span style={{color:'red'}}><ExclamationCircleOutlined /> 下载出错</span> : null}
-                        {item.state === 'paused' ? <span><PauseCircleOutlined /> 暂停中</span> : null}
+                        {item.state === 'waiting' ? <span style={{color:'orange'}}><ClockCircleOutlined /> {statusText.waiting}</span> : null}
+                        {item.state === 'error' ? <span style={{color:'red'}}><ExclamationCircleOutlined /> {statusText.error}</span> : null}
+                        {item.state === 'paused' ? <span style={{color: '#108ee9'}}><PauseCircleOutlined /> {statusText.paused}</span> : null}
                     </div>
                 </List.Item>
             </div>

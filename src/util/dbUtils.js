@@ -1,6 +1,5 @@
 import Dexie from "dexie";
 import _ from 'lodash'
-import {keys} from "mobx";
 
 const db_codes = new Dexie("sysCodes");
 db_codes.version(1).stores({code: ''});
@@ -115,4 +114,8 @@ export function deleteMetaData(jobId) {
 export async function allMetaData(jobId) {
     // 将所有数据递归为一维数组
     return _.flattenDeep(await t_metaData.get(jobId));
+}
+
+export function cleanMetaData() {
+    t_metaData.clear().catch(e => console.error(e));
 }

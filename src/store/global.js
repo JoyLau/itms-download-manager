@@ -1,8 +1,8 @@
 import {observable, action} from 'mobx';
 import {getStorage,setStorage} from "../util/utils";
-import config from '../util/config'
 
 const os = window.require('os')
+const {app} = window.require('electron').remote;
 
 /**
  * 全局配置
@@ -23,7 +23,7 @@ class Global {
 
     // 文件保存目录
     @observable
-    savePath = this.readStorageOrElse('savePath',os.homedir() + config.sep + "Downloads")
+    savePath = this.readStorageOrElse('savePath',app.getPath("downloads"))
 
     //自动修改为上次使用的目录
     @observable
@@ -72,6 +72,9 @@ class Global {
     // 压缩类型
     @observable
     compressType = this.readStorageOrElse('compressType','.zip')
+
+    @observable
+    autoUpdate = this.readStorageOrElse('autoUpdate',true)
 
     /**
      * 读取 Storage 值, 否则设置默认值
@@ -176,6 +179,12 @@ class Global {
     changeCompressType(compressType) {
         this.compressType = compressType
         setStorage('compressType',compressType)
+    }
+
+    @action
+    changeAutoUpdate(update) {
+        this.autoUpdate = update
+        setStorage('autoUpdate',update)
     }
 }
 

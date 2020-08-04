@@ -18,8 +18,8 @@ import {
     bytesToSize,
     formatTime, unzip,
     formatDate_, basename, filename,
+    readBigFileByLine,writeBigFileByLine
 } from "../../../util/utils";
-import {allMetaData, deleteMetaData, saveAllMetaData} from '../../../util/dbUtils'
 import Bagpipe from "../../Bagpipe/bagpipe";
 import config from '../../../util/config'
 import {toJS} from "mobx";
@@ -145,7 +145,7 @@ class PassVehAll extends Component {
                         description: '正在写入缓存...',
                     })
 
-                    // 读取 json 存入 indexedDB
+                    // 读取 json 存入 本地文件
                     const bagpipe = new Bagpipe(1, {});
                     const totalFiles = fs.readdirSync(metaFilePath).length;
 
@@ -162,11 +162,6 @@ class PassVehAll extends Component {
                             }
                         });
                     })
-
-
-                    // closeNotification(notification, data.id)
-
-
                 })
                 .pipe(fs.createWriteStream(metaFileFullPath));
         } catch (e) {
@@ -181,7 +176,7 @@ class PassVehAll extends Component {
     readJSONFile = async (index, total, data, filePath, callback) => {
         updateNotification(notification, {
             key: data.id,
-            message: '正在写入缓存,请稍等...',
+            message: '正在请求数据,请稍等...',
             description: <span>
                         当前: 第 {index + 1} 批
                         <Divider type="vertical"/>
@@ -270,18 +265,17 @@ class PassVehAll extends Component {
             description: '数据缓存中...',
         })
 
-
         // 在此最好等数据存储完毕在进行下一步操作
         // 否则在此步骤关闭软件将导致不可控的问题
-        saveAllMetaData(totalData,job.id,async function () {
-            // 等一会,否则太快看不到提示
-            await waitMoment(2000)
-            closeNotification(notification, taskId)
-            // 添加任务
-            that.props.task.addJob(job)
-            // 开始处理
-            await that.process(job)
-        })
+        const dataPath = tmpdir + config.sep + taskId + config.sep + "metaData" + config.sep + taskId;
+
+        writeBigFileByLine(dataPath, totalData);
+
+        closeNotification(notification, taskId)
+        // 添加任务
+        that.props.task.addJob(job)
+        // 开始处理
+        that.process(job)
     }
 
 
@@ -298,7 +292,9 @@ class PassVehAll extends Component {
             await waitMoment(500);
 
             // 获取任务的元数据
-            const data = await allMetaData(jobId);
+            const dataPath = tmpdir + config.sep + jobId + config.sep + "metaData" + config.sep + jobId;
+            const data = await readBigFileByLine(dataPath)
+
             that.state[jobId] = {
                 finishCount: process.finishCount,
                 blankCount: process.blankCount,
@@ -332,11 +328,11 @@ class PassVehAll extends Component {
         job.item.forEach((item,index) => {
             // 如果发现 state.finishCount !== 0 的话,则任务为断点续传任务, 跳过之前的下载项
             if (index < this.state[job.id].finishCount) return;
-            this.state[job.id].downloadBagpipe.push(that.download, index, nowTime, item, total, async function (finish) {});
+            this.state[job.id].downloadBagpipe.push(that.download, index, nowTime, item, total, function () {});
         })
     }
 
-    download = async (index, startTime, item, total, callback) => {
+    download = (index, startTime, item, total, callback) => {
         const that = this;
         const taskId = item.taskId;
         const taskName = item.taskName;
@@ -364,12 +360,18 @@ class PassVehAll extends Component {
                     that.props.task.updateStateJob(taskId, "error")
                 })
                 .on('response', function (response) {
+                    // 如果任务信息不存在了, 则直接返回
+                    if (!that.state[item.taskId]) return;
+
                     // 统计空白图片
                     if (response.headers && response.headers['blank-image']) {
                         that.state[taskId].blankCount++
                     }
                 })
                 .on('end', function () {
+                    // 如果任务信息不存在了, 则直接返回
+                    if (!that.state[item.taskId]) return;
+
                     that.state[taskId].finishCount++
                     // 当前任务已下载完成的文件数
                     let finishCount = that.state[taskId].finishCount;
@@ -618,9 +620,6 @@ class PassVehAll extends Component {
         setTimeout(function () {
             that.props.jobProcess.deleteProcess(jobId)
         },1000)
-
-        // 删除任务元数据信息
-        deleteMetaData(jobId)
     }
 
     render() {

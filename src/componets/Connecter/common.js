@@ -20,9 +20,11 @@ export const updateSysCode = async (data) => {
 }
 
 export const getCodeName = (type, code) => {
-    const sysCode = getSessionStorage(type).find(path => path.value === code);
-    if (sysCode) {
-        return sysCode.text
+    let sysCode;
+    try {
+        sysCode = getSessionStorage(type).find(path => path.value === code);
+    } catch (e) {
+        return code
     }
-    return "";
+    return sysCode ? sysCode.text : code;
 }

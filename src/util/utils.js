@@ -19,6 +19,8 @@ const compressing = window.require('compressing');
 
 const fse = window.require('fs-extra');
 
+const readline = window.require('readline')
+
 export const eventBus = new EventEmitter();
 
 export const tmpdir = os.tmpdir() + config.sep + config.PROTOCOL;
@@ -42,12 +44,21 @@ export function filename(f) {
 }
 
 export const statusText = {
-    'paused': '暂停',
-    'waiting': '等待中',
-    'active': '下载中',
-    'complete': '已完成',
-    'error': '下载出错'
+    paused: '暂停',
+    waiting: '等待中',
+    active: '下载中',
+    complete: '已完成',
+    error: '下载出错',
+    delete: '已删除'
 };
+
+// job 类型对于 avatar 的样式定义
+export const jobTypeClass = {
+    'illegalVeh-select': 'illegalPassStyle',
+    'illegalVeh-all':'illegalPassStyle',
+    'passVeh-select':'vehPassStyle',
+    'passVeh-all':'vehPassStyle',
+}
 
 export function getStorage(key) {
     let val = localStorage.getItem(key);
@@ -268,4 +279,37 @@ export function decryptPassphrase(passphrase) {
         //
     }
     return originalText;
+}
+
+/**
+ * 逐行读取大文件
+ * @param path
+ */
+export function readBigFileByLine(path) {
+    return new Promise((resolve) => {
+        const data = [];
+
+        const readLine = readline.createInterface({
+            input: fse.createReadStream(path)
+        });
+
+        readLine.on('line',chunk => {
+            data.push(JSON.parse(chunk))
+        })
+
+        readLine.on('close',() => {
+            resolve(data);
+        })
+    })
+}
+
+/**
+ * 逐行写入大文件
+ */
+export function writeBigFileByLine(path,arrData) {
+    const writeStream = fse.createWriteStream(path,{flags: 'a'})
+    arrData.forEach(item => {
+        writeStream.write(JSON.stringify(item) + config.eol)
+    })
+    writeStream.end();
 }

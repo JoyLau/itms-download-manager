@@ -1,17 +1,19 @@
 import React, {Component} from 'react';
 import { message, Progress, Tooltip} from "antd";
-import pck from '../../../package.json'
-import {eventBus,waitMoment,tmpdir} from "../../util/utils";
+import {eventBus,waitMoment,tmpdir,getStorage} from "../../util/utils";
 import semver from 'semver';
 import progress from 'request-progress';
 import config from '../../util/config'
 import './style.css'
 import { SoundOutlined} from'@ant-design/icons';
+import {inject, observer} from "mobx-react";
 
 const request = window.require('request')
 const fs = window.require('fs');
 const {shell,app} = window.require('electron').remote;
 
+@inject('global')
+@observer
 class Version extends Component {
 
     state = {
@@ -21,16 +23,26 @@ class Version extends Component {
     }
 
     componentDidMount() {
+        // 事件更新
         eventBus.on('update-soft', this.updateSoft)
+
+        // 主动监测更新
+        if (this.props.global.autoUpdate) {
+            this.updateSoft(getStorage("update-soft"))
+        }
+
     }
 
     updateSoft = (update) => {
+        if (!update) return;
+        if (this.state.visible) return
+
         try {
             this.setState({
                 updateInfo: update
             })
             const latestVersion = update.latest.version;
-            if (semver.satisfies(latestVersion, '>' + pck.version)) {
+            if (semver.satisfies(latestVersion, '>' + app.getVersion())) {
                 this.setState({
                     visible: true
                 });
@@ -138,7 +150,7 @@ class Version extends Component {
                             placement={'rightTop'}
                             trigger={[]}
                         >
-                            <span style={{fontSize: '10px', color: '#ffffff'}} onClick={this.close}>v{pck.version}</span>
+                            <span style={{fontSize: '10px', color: '#ffffff'}} onClick={this.close}>v{app.getVersion()}</span>
 
                         </Tooltip>
                     </div>
