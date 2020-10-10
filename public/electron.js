@@ -5,7 +5,7 @@ const os = require('os');
 let win;
 let tray;
 const gotTheLock = app.requestSingleInstanceLock()
-const winTitle = "安慧软件管控平台文件下载器"
+const winTitle = "管控平台文件下载器"
 const PROTOCOL = "itms-download-manager"
 let protocolData = null;
 

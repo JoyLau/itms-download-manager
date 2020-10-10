@@ -1,6 +1,6 @@
 {
   "name": "itms-download-manager",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "description": "ITMS Download Manager Desktop App",
   "main": "./public/electron.js",
   "author": {
@@ -11,7 +11,7 @@
   "build": {
     "productName": "ITMS Download Manager",
     "appId": "cn.joylau.code.itms-download-manager",
-    "copyright": "Copyright © 合肥安慧软件, Inc. All rights reserved.",
+    "copyright": "Copyright © JoyLau, Inc. All rights reserved.",
     "compression": "store",
     "asar": true,
     "files": [
@@ -65,7 +65,7 @@
       "installerHeaderIcon": "./public/icons/win.ico",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "安慧管控平台文件下载器(通用版)",
+      "shortcutName": "管控平台文件下载器(通用版)",
       "license": "./../LICENSE",
       "include": "./static/nsis/installer.nsh"
     }
